@@ -2,6 +2,83 @@
 
 This document explains the detailed process of how Rust code becomes a running program on the BBC micro:bit v2, covering compilation, linking, memory layout, and flashing.
 
+## VS Code Integration and rust-analyzer
+
+### Code Lens Feature
+When you open any example's `src/main.rs` file in VS Code, you'll notice small interactive buttons above the `#[entry]` function:
+
+- **▶️ Run**: Executes `cargo run --bin example_name`
+- **🐛 Debug**: Launches debugging session (if configured)
+
+### How Code Lens Works
+The **rust-analyzer** Language Server analyzes your code and provides these "Code Lens" actions by:
+
+1. **Detecting entry points**: Recognizes `#[entry]` as a runnable binary target
+2. **Reading Cargo.toml**: Understands your project's binary configuration
+3. **Generating commands**: Creates the appropriate `cargo run --bin` command
+4. **Integration with runner**: Uses your `.cargo/config.toml` runner configuration
+
+### What Happens When You Click Run
+When you click the ▶️ Run button, rust-analyzer executes:
+
+```bash
+cargo run --bin example_01_hello_world
+```
+
+Which triggers the build process and uses your configured runner:
+```toml
+# From .cargo/config.toml
+runner = "probe-rs run --chip nRF52833_xxAA"
+```
+
+This seamlessly integrates the entire compilation → linking → flashing pipeline into a single click.
+
+### What Happens When You Click Debug
+
+The **🐛 Debug** text next to the run arrow launches an interactive debugging session. When you click "Debug", rust-analyzer essentially runs:
+
+```bash
+cargo build  # Build with debug symbols
+probe-rs gdb --chip nRF52833_xxAA target/thumbv7em-none-eabihf/debug/example_name
+```
+
+#### Debug Mode Capabilities
+
+Debug mode allows you to:
+
+1. **Set breakpoints**: Click in the left margin of VS Code to pause execution at specific lines
+2. **Step-through execution**: Execute your code line by line to see what's happening
+3. **Variable inspection**: View the values of variables at any point during execution
+4. **Memory examination**: Look at register values and memory contents
+5. **Call stack viewing**: See the function call hierarchy
+
+#### The Debug Process
+
+When debugging starts:
+1. **Builds with debug info** (symbols, line number mappings)
+2. **Launches probe-rs in GDB mode** 
+3. **Connects to the micro:bit** via the interface chip's SWD bridge
+4. **Loads the program** into flash and halts at the entry point
+5. **Opens VS Code's debug interface**
+
+#### VS Code Debug Interface
+
+Once debugging is active, you get access to:
+- **Debug console**: For GDB commands and program output
+- **Variables panel**: Shows local variables and their values  
+- **Watch panel**: Monitor specific expressions
+- **Call stack**: See which functions called which
+- **Breakpoints panel**: Manage your breakpoints
+
+#### Requirements for Debugging
+
+For debugging to work properly, you need:
+- **Debug configuration** in `.vscode/launch.json` (optional for basic debugging)
+- **Debug symbols enabled** in your build (automatic in debug builds)
+- **Connected micro:bit** with proper probe-rs support
+
+This is extremely powerful for embedded development because you can debug **on the actual hardware** while your program runs on the micro:bit, inspecting real GPIO states, timer values, and memory contents!
+
 ## Overview
 
 The journey from Rust source to running embedded code involves several critical steps:

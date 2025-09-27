@@ -16,6 +16,8 @@ This project is based on examples from [The Embedded Rust Book](https://docs.rus
 
 **Run with:** `cargo run --bin example_01_hello_world`
 
+> **💡 VS Code Tip**: When viewing the source code, you'll see a small ▶️ "Run" arrow above the `#[entry]` function. This is provided by rust-analyzer and lets you run the example with a single click!
+
 <!-- Future examples will be added here -->
 <!-- ### Example 02: Button Input
 **Reading button presses** - Handling user input
