@@ -18,7 +18,7 @@ fn main() -> ! {
     loop {
         timer0.delay_ms(500);
         row1.set_high().unwrap();
-        timer0.delay_ms(100);
+        timer0.delay_ms(1000);
         row1.set_low().unwrap();
     }
 }
