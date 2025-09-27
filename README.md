@@ -20,7 +20,7 @@ This will perform a build of the code, and flash it.
 > **💡 VS Code Tip**: When viewing the source code, you'll see a small ▶️ "Run" arrow above the `#[entry]` function. This is provided by rust-analyzer and lets you run the example with a single click!
 <img width="1660" height="773" alt="image" src="https://github.com/user-attachments/assets/744fbe24-fdd4-4cfb-af37-8be0536d5d28" />
 
-It is possible to do on target debugging. Start the session using the preconfigured launch command
+It is possible to do on target debugging. Start the session using the preconfigured launch command (or just press F5).
 
 <img width="2257" height="1084" alt="image" src="https://github.com/user-attachments/assets/84128dfc-99a1-4703-adae-b770a1a1c9fa" />
 
