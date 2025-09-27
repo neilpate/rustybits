@@ -1,19 +1,30 @@
-# Rusty MicroBit - Hello World
+# Rusty Bits - BBC micro:bit v2 Rust Examples
 
 ![960px-Micro-bit_v2](https://github.com/user-attachments/assets/ce0fe5b0-dc15-4ad8-a31c-e2cbbe288afc)
 
-A simple LED blinking example for the BBC micro:bit v2 written in Rust. This project demonstrates basic embedded Rust programming using the nRF52833 microcontroller and the micro:bit v2 development board.
+A collection of embedded Rust programming examples for the BBC micro:bit v2. This project demonstrates various aspects of embedded development using the nRF52833 microcontroller and the micro:bit v2 development board.
 
 This project is based on examples from [The Embedded Rust Book](https://docs.rust-embedded.org/book/), which provides comprehensive guidance for embedded Rust development.
 
-## What This Project Does
+## Examples
 
-This is a "Hello World" equivalent for embedded systems - it blinks an LED on the micro:bit's LED matrix. The program:
+### [Example 01: Hello World](example_01_hello_world/)
+**Basic LED blinking** - The "Hello World" of embedded systems
+- Board initialization and GPIO configuration  
+- Hardware timer usage for delays
+- Simple LED matrix control
 
-1. Initializes the micro:bit board
-2. Configures row 1 and column 1 of the LED matrix
-3. Creates a timer for delays
-4. Continuously blinks the LED at the intersection of row 1 and column 1
+**Run with:** `cargo run --bin example_01_hello_world`
+
+<!-- Future examples will be added here -->
+<!-- ### Example 02: Button Input
+**Reading button presses** - Handling user input
+- GPIO input configuration
+- Interrupt handling
+- Button debouncing
+
+**Run with:** `cargo run --bin example_02_buttons`
+-->
 
 ## Hardware Requirements
 
@@ -24,41 +35,24 @@ Follow the installation guide from [The Embedded Rust Book - Installation](https
 
 ## Project Structure
 
-### Cargo.toml - Project Configuration
+## Running Examples
 
-```toml
-[package]
-authors = ["Neil Pate"]
-edition = "2021"
-name = "hello-world"
-version = "0.1.0"
+Each example is a separate binary in the same Cargo project:
 
-[[bin]]
-name = "hello-world"
-test = false
-bench = false
+```bash
+# Run a specific example
+cargo run --bin example_01_hello_world
 
-[dependencies]
-cortex-m-rt = "0.7.5"
-embedded-hal = "1.0.0"
-microbit-v2 = "0.15.1"
-nrf52833-hal = "0.18.0"
-panic-halt = "1.0.0"
+# List all available examples  
+cargo run --bin <TAB>
 
-[dependencies.cortex-m]
-version = "0.7.7"
-features = ["inline-asm"]
+# Build all examples
+cargo build
 ```
 
-**Key Configuration Details:**
+Make sure your micro:bit v2 is connected via USB before running examples.
 
-- **`[[bin]]` section**: Disables tests and benchmarks (`test = false`, `bench = false`) which are incompatible with `no_std` embedded environments
-- **`cortex-m-rt`**: Runtime crate providing the entry point and memory layout for ARM Cortex-M processors
-- **`embedded-hal`**: Hardware abstraction layer traits for embedded systems (timers, GPIO, etc.)
-- **`microbit-v2`**: Board support package specifically for micro:bit v2, includes pin definitions and board initialization
-- **`nrf52833-hal`**: Hardware abstraction layer for the Nordic nRF52833 System-on-Chip
-- **`panic-halt`**: Simple panic handler that halts execution on panic (required for `no_std`)
-- **`cortex-m`**: Core ARM Cortex-M functionality with inline assembly features enabled
+## Project Configuration
 
 ### .cargo/config.toml - Build Configuration
 
