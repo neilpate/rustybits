@@ -1,5 +1,5 @@
 [package]
-authors = ["Bart Massey"]
+authors = ["Neil Pate"]
 edition = "2021"
 name = "hello-world"
 version = "0.1.0"

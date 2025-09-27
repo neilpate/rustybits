@@ -2,6 +2,8 @@
 
 A simple LED blinking example for the BBC micro:bit v2 written in Rust. This project demonstrates basic embedded Rust programming using the nRF52833 microcontroller and the micro:bit v2 development board.
 
+This project is based on examples from [The Embedded Rust Book](https://docs.rust-embedded.org/book/), which provides comprehensive guidance for embedded Rust development.
+
 ## What This Project Does
 
 This is a "Hello World" equivalent for embedded systems - it blinks an LED on the micro:bit's LED matrix. The program:
@@ -14,14 +16,9 @@ This is a "Hello World" equivalent for embedded systems - it blinks an LED on th
 ## Hardware Requirements
 
 - BBC micro:bit v2 (with nRF52833 microcontroller)
-- USB cable for programming and power
-- Computer with USB port
 
-## Software Requirements
-
-- Rust toolchain (1.83.0 or later recommended)
-- `thumbv7em-none-eabihf` target for ARM Cortex-M4
-- `probe-rs` for flashing and debugging
+## Software Installation Guide
+Follow the installation guide from [The Embedded Rust Book - Installation](https://docs.rust-embedded.org/book/intro/install.html) for complete setup instructions.
 
 ## Project Structure
 
@@ -29,7 +26,7 @@ This is a "Hello World" equivalent for embedded systems - it blinks an LED on th
 
 ```toml
 [package]
-authors = ["Bart Massey"]
+authors = ["Neil Pate"]
 edition = "2021"
 name = "hello-world"
 version = "0.1.0"
@@ -111,54 +108,6 @@ newline_style = "Windows"
 use_small_heuristics = "Default"
 ```
 
-**Formatting Configuration:**
-
-- **`max_width`**: Lines wrap at 120 characters (extended from default 100 for better readability)
-- **`tab_spaces`**: Uses 4 spaces for indentation
-- **`newline_style`**: Windows line endings (CRLF) for consistency with development environment
-- **`use_small_heuristics`**: Default formatting decisions for small code constructs
-
-## Building and Running
-
-### Prerequisites
-
-1. Install Rust and the embedded target:
-   ```bash
-   rustup target add thumbv7em-none-eabihf
-   ```
-
-2. Install probe-rs for flashing:
-   ```bash
-   cargo install probe-rs --features cli
-   ```
-
-### Build Commands
-
-```bash
-# Build the project
-cargo build
-
-# Build and run on connected micro:bit
-cargo run
-
-# Format code
-cargo fmt
-
-# Check for compilation errors without building
-cargo check
-```
-
-## Code Explanation
-
-The main application (`src/main.rs`) demonstrates:
-
-- **`#![no_main]`** and **`#![no_std]`**: Disables standard library and main function (replaced by custom entry point)
-- **`#[entry]`**: Marks the custom entry point function (from `cortex-m-rt`)
-- **Board initialization**: Takes ownership of the micro:bit hardware
-- **GPIO configuration**: Sets up LED matrix pins (row 1 as output high, col 1 as output low)
-- **Timer usage**: Creates delays using the hardware timer
-- **Infinite loop**: Continuously blinks the LED with 500ms on, 100ms off pattern
-
 ## Memory Layout
 
 The project uses auto-generated memory layout from the `microbit-v2` crate, which provides:
@@ -166,38 +115,9 @@ The project uses auto-generated memory layout from the `microbit-v2` crate, whic
 - RAM allocation compatible with the micro:bit v2
 - Stack and heap configuration for the Cortex-M4 processor
 
-## Troubleshooting
-
-### Common Issues
-
-1. **"No loadable segments"**: Ensure all TOML files are properly configured and `cargo clean` before rebuilding
-2. **"Can't find crate for test"**: Make sure `test = false` is set in the `[[bin]]` section of `Cargo.toml`
-3. **Rust version conflicts**: Update Rust with `rustup update` to ensure compatibility with all dependencies
-4. **Probe connection issues**: Check USB connection and try `probe-rs list` to detect connected devices
-
-### Verification Commands
-
-```bash
-# Check Rust version
-rustc --version
-
-# List available targets
-rustup target list --installed
-
-# Check connected probes
-probe-rs list
-
-# Verify project builds
-cargo check
-```
-
 ## Learning Resources
 
 - [Embedded Rust Book](https://docs.rust-embedded.org/book/)
 - [micro:bit v2 Documentation](https://tech.microbit.org/hardware/)
 - [nRF52833 Product Specification](https://infocenter.nordicsemi.com/topic/ps_nrf52833/keyfeatures_html5.html)
 - [Rust Embedded HAL Documentation](https://docs.rs/embedded-hal/)
-
-## License
-
-This project is intended for educational purposes and follows standard embedded Rust practices for the micro:bit platform.
