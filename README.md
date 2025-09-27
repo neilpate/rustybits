@@ -1,7 +1,5 @@
 # Rusty MicroBit - Hello World
 
-![BBC micro:bit v2](https://upload.wikimedia.org/wikipedia/commons/thumb/1/1f/Microbit-v2.jpg/320px-Microbit-v2.jpg)
-
 A simple LED blinking example for the BBC micro:bit v2 written in Rust. This project demonstrates basic embedded Rust programming using the nRF52833 microcontroller and the micro:bit v2 development board.
 
 This project is based on examples from [The Embedded Rust Book](https://docs.rust-embedded.org/book/), which provides comprehensive guidance for embedded Rust development.
