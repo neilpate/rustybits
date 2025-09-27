@@ -15,8 +15,10 @@ This project is based on examples from [The Embedded Rust Book](https://docs.rus
 - Simple LED matrix control
 
 **Run with:** `cargo run --bin example_01_hello_world`
+This will perform a build of the code, and flash it.
 
 > **💡 VS Code Tip**: When viewing the source code, you'll see a small ▶️ "Run" arrow above the `#[entry]` function. This is provided by rust-analyzer and lets you run the example with a single click!
+<img width="1660" height="773" alt="image" src="https://github.com/user-attachments/assets/744fbe24-fdd4-4cfb-af37-8be0536d5d28" />
 
 <!-- Future examples will be added here -->
 <!-- ### Example 02: Button Input
