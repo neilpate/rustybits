@@ -1,5 +1,7 @@
 # Rusty MicroBit - Hello World
 
+![BBC micro:bit v2](https://cdn.sanity.io/images/ajwvhvgo/production/0adb0ce8ec3c0fb3aaf0c9e4c6c1c5d54e60e442-1000x750.png?w=653&h=490&fit=fill)
+
 A simple LED blinking example for the BBC micro:bit v2 written in Rust. This project demonstrates basic embedded Rust programming using the nRF52833 microcontroller and the micro:bit v2 development board.
 
 This project is based on examples from [The Embedded Rust Book](https://docs.rust-embedded.org/book/), which provides comprehensive guidance for embedded Rust development.
@@ -99,14 +101,6 @@ enabled = false
 - **`rtt`**: Real-Time Transfer debugging disabled (not needed for simple LED blink)
 - **`gdb`**: GDB debugging interface disabled (not needed for this simple example)
 
-### rustfmt.toml - Code Formatting
-
-```toml
-max_width = 120
-tab_spaces = 4
-newline_style = "Windows"
-use_small_heuristics = "Default"
-```
 
 ## Memory Layout
 
