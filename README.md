@@ -26,7 +26,7 @@ It is possible to do on target debugging. Start the session using the preconfigu
 
 This command is set up to halt the CPU on load. You can resume as usual by pressing the run arrow at the top.
 
-
+If you don't like this behaviour you can disable this automatic halting. Then use breakpoints as usual to pause execution.
 
 
 
