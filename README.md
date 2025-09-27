@@ -96,15 +96,33 @@ enabled = false
 - **`gdb`**: GDB debugging interface disabled (not needed for this simple example)
 
 
-## Memory Layout
+## How It All Works
 
+These examples leverage the power of Rust's embedded ecosystem to hide much of the low-level complexity:
+
+### Hardware Abstraction
+- **`microbit-v2` crate**: Provides a high-level board abstraction - you get simple functions like `board.display_pins.row1` instead of manually configuring GPIO registers
+- **`nrf52833-hal` crate**: Handles the Nordic chip specifics - timers, GPIO, and peripherals are wrapped in safe, easy-to-use APIs
+- **`cortex-m-rt` crate**: Takes care of the startup sequence, memory layout, and low-level ARM Cortex-M details
+
+### What's Hidden Away
+Behind the simple Rust code are hundreds of lines of:
+- **Register manipulation**: Direct hardware register reads/writes for GPIO, timers, clocks
+- **Memory layout configuration**: Linker scripts defining where code and data live in flash/RAM  
+- **Startup code**: Assembly routines that run before your `main()` function
+- **Interrupt vectors**: Hardware interrupt handling and vector tables
+- **Clock configuration**: Setting up the chip's various clock sources and frequencies
+
+### Memory Layout
 The project uses auto-generated memory layout from the `microbit-v2` crate, which provides:
-- Flash memory mapping for the nRF52833
-- RAM allocation compatible with the micro:bit v2
+- Flash memory mapping for the nRF52833 (typically starts at 0x00000000)
+- RAM allocation compatible with the micro:bit v2 (typically starts at 0x20000000) 
 - Stack and heap configuration for the Cortex-M4 processor
+- Bootloader compatibility (leaves space for the micro:bit's built-in bootloader)
 
 ## Learning Resources
 
+- **[DEEP_DIVE.md](DEEP_DIVE.md)** - Detailed explanation of the compilation, linking, and flashing process from Rust source to running micro:bit code
 - [Embedded Rust Book](https://docs.rust-embedded.org/book/)
 - [micro:bit v2 Documentation](https://tech.microbit.org/hardware/)
 - [nRF52833 Product Specification](https://infocenter.nordicsemi.com/topic/ps_nrf52833/keyfeatures_html5.html)
