@@ -214,39 +214,7 @@ Target Memory Bus - CPU's internal buses
 ```
 
 #### How SWD Works
-1. **Packet Structure**: Commands are sent as 38-bit packets:
-   ```
-   [Start][APnDP][RnW][A2:3][Parity][Stop][Park][ACK][Data[0:31]][Parity]
-   ```
 
-2. **Debug Port (DP)**: Controls the debug session
-   - **IDCODE**: Identifies the target processor
-   - **CTRL/STAT**: Controls power domains and debug state
-   - **SELECT**: Chooses which Access Port to use
-
-3. **Access Port (AP)**: Provides memory access
-   - **AHB-AP**: Access to the CPU's AHB bus (memory, peripherals)
-   - **JTAG-AP**: Legacy JTAG compatibility
-   - **APB-AP**: Access to debug components
-
-#### Memory Access Process
-```rust
-// Conceptual SWD memory read sequence
-fn read_memory(address: u32) -> u32 {
-    // 1. Select the AHB Access Port
-    dp.write(SELECT, AHB_AP);
-    
-    // 2. Set up the memory address  
-    ap.write(TAR, address);  // Transfer Address Register
-    
-    // 3. Initiate the read
-    ap.write(CSW, SIZE_32BIT | AUTO_INCREMENT);  // Control/Status Word
-    
-    // 4. Read the data
-    let data = ap.read(DRW);  // Data Read/Write register
-    data
-}
-```
 
 #### Debug Features Enabled by SWD
 - **Flash Programming**: Direct write access to flash memory controllers
