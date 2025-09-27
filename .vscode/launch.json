@@ -7,8 +7,8 @@
         {
             "type": "probe-rs-debug",
             "request": "launch",
-            "name": "Debug EX-01",
-            "cwd": "",
+            "name": "Debug Example 01",
+            "cwd": "${workspaceFolder}/example_01_hello_world",
             "connectUnderReset": false,
             "chip": "nRF52833_xxAA",
             "flashingConfig": {
@@ -18,7 +18,7 @@
             "coreConfigs": [
                 {
                     "coreIndex": 0,
-                    "programBinary": "target/thumbv7em-none-eabihf/debug/example_01_hello_world"
+                    "programBinary": "../target/thumbv7em-none-eabihf/debug/main"
                 }
             ],
             "preLaunchTask": "rust: cargo build"

@@ -1,33 +1,14 @@
-[package]
-name = "rustymicrobit"
-authors = ["Neil Pate"]
-edition = "2021"
-version = "0.1.0"
+[workspace]
+members = ["example_01_hello_world"]
+resolver = "2"
 
 # ============================================================================
-# DEPENDENCIES - Shared by all examples
+# WORKSPACE CONFIGURATION
 # ============================================================================
-
-[dependencies]
-cortex-m-rt = "0.7.5"      # Core embedded runtime - provides entry point and memory layout
-embedded-hal = "1.0.0"     # Hardware abstraction layer traits (GPIO, timers, etc.)
-microbit-v2 = "0.15.1"     # Board support package for micro:bit v2
-nrf52833-hal = "0.18.0"    # Hardware abstraction layer for nRF52833 chip
-panic-halt = "1.0.0"       # Panic handler for no_std environment
-
-# ARM Cortex-M core functionality
-[dependencies.cortex-m]
-version = "0.7.7"
-features = ["inline-asm"] # Enable inline assembly support
-
+# This is a Cargo workspace containing multiple independent examples.
+# Each example has its own Cargo.toml with specific dependencies.
+#
+# To run examples:
+#   cd example_01_hello_world && cargo run
+#   cd example_02_hello_world_minimal_dependencies && cargo run
 # ============================================================================
-# EXAMPLES - Add a new [[bin]] section for each example
-# ============================================================================
-# Example 01: Basic LED blinking
-# Usage: cargo run --bin example_01_hello_world
-[[bin]]
-name = "example_01_hello_world"
-path = "example_01_hello_world/src/main.rs"
-test = false                                # Required: no_std doesn't support test framework
-bench = false                               # Required: no_std doesn't support bench framework
-

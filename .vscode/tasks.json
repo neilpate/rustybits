@@ -2,13 +2,15 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "rust: cargo build",
-            "type": "cargo",
-            "command": "build",
+            "label": "Build Example 01",
+            "type": "shell",
+            "command": "cargo",
             "args": [
-                "--bin",
-                "example_01_hello_world"
+                "build"
             ],
+            "options": {
+                "cwd": "${workspaceFolder}/example_01_hello_world"
+            },
             "group": "build",
             "presentation": {
                 "reveal": "always",
@@ -19,13 +21,15 @@
             ]
         },
         {
-            "label": "cargo run",
-            "type": "cargo",
-            "command": "run",
+            "label": "Run Example 01",
+            "type": "shell",
+            "command": "cargo",
             "args": [
-                "--bin",
-                "example_01_hello_world"
+                "run"
             ],
+            "options": {
+                "cwd": "${workspaceFolder}/example_01_hello_world"
+            },
             "group": "build",
             "presentation": {
                 "reveal": "always",

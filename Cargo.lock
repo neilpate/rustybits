@@ -129,6 +129,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a21dea9854beb860f3062d10228ce9b976da520a73474aed3171ec276bc0c032"
 
 [[package]]
+name = "example_01_hello_world"
+version = "0.1.0"
+dependencies = [
+ "cortex-m",
+ "cortex-m-rt",
+ "embedded-hal 1.0.0",
+ "microbit-v2",
+ "nrf52833-hal",
+ "panic-halt",
+]
+
+[[package]]
 name = "fixed"
 version = "1.29.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -302,18 +314,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "138e3e0acb6c9fb258b19b67cb8abd63c00679d2851805ea151465464fe9030a"
 dependencies = [
  "semver",
-]
-
-[[package]]
-name = "rustymicrobit"
-version = "0.1.0"
-dependencies = [
- "cortex-m",
- "cortex-m-rt",
- "embedded-hal 1.0.0",
- "microbit-v2",
- "nrf52833-hal",
- "panic-halt",
 ]
 
 [[package]]
