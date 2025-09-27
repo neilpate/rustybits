@@ -18,7 +18,26 @@
             "coreConfigs": [
                 {
                     "coreIndex": 0,
-                    "programBinary": "../target/thumbv7em-none-eabihf/debug/main"
+                    "programBinary": "../target/thumbv7em-none-eabihf/debug/example_01_hello_world"
+                }
+            ],
+            "preLaunchTask": "rust: cargo build"
+        },
+        {
+            "type": "probe-rs-debug",
+            "request": "launch",
+            "name": "Debug Example 02",
+            "cwd": "${workspaceFolder}/example_02_hello_world_minimal_dependencies",
+            "connectUnderReset": false,
+            "chip": "nRF52833_xxAA",
+            "flashingConfig": {
+                "flashingEnabled": true,
+                "haltAfterReset": false
+            },
+            "coreConfigs": [
+                {
+                    "coreIndex": 0,
+                    "programBinary": "../target/thumbv7em-none-eabihf/debug/example_02_hello_world_minimal_dependencies"
                 }
             ],
             "preLaunchTask": "rust: cargo build"

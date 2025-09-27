@@ -1,0 +1,39 @@
+[package]
+name = "example_02_hello_world_minimal_dependencies"
+authors = ["Neil Pate"]
+edition = "2021"
+version = "0.1.0"
+
+# ============================================================================
+# DEPENDENCIES - Full HAL for convenient embedded development
+# ============================================================================
+
+[dependencies]
+cortex-m-rt = "0.7.5"      # Core embedded runtime - provides entry point and memory layout
+embedded-hal = "1.0.0"     # Hardware abstraction layer traits (GPIO, timers, etc.)
+microbit-v2 = "0.15.1"     # Board support package for micro:bit v2
+nrf52833-hal = "0.18.0"    # Hardware abstraction layer for nRF52833 chip
+panic-halt = "1.0.0"       # Panic handler for no_std environment
+
+# ARM Cortex-M core functionality
+[dependencies.cortex-m]
+version = "0.7.7"
+features = ["inline-asm"] # Enable inline assembly support
+
+# ============================================================================
+# TARGET CONFIGURATION
+# ============================================================================
+
+# Configure probe-rs as the runner for flashing to micro:bit v2
+[target.thumbv7em-none-eabihf]
+runner = "probe-rs run --chip nRF52833_xxAA"
+
+# ============================================================================
+# BINARY CONFIGURATION
+# ============================================================================
+
+[[bin]]
+name = "example_02_hello_world_minimal_dependencies"
+path = "src/main.rs" 
+test = false    # Required: no_std doesn't support test framework
+bench = false   # Required: no_std doesn't support bench framework

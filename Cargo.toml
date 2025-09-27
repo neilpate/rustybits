@@ -1,5 +1,8 @@
 [workspace]
-members = ["example_01_hello_world"]
+members = [
+    "example_01_hello_world",
+    "example_02_hello_world_minimal_dependencies",
+]
 resolver = "2"
 
 # ============================================================================

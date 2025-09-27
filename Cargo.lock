@@ -141,6 +141,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "example_02_hello_world_minimal_dependencies"
+version = "0.1.0"
+dependencies = [
+ "cortex-m",
+ "cortex-m-rt",
+ "embedded-hal 1.0.0",
+ "microbit-v2",
+ "nrf52833-hal",
+ "panic-halt",
+]
+
+[[package]]
 name = "fixed"
 version = "1.29.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
