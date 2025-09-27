@@ -15,6 +15,9 @@ This is a "Hello World" equivalent for embedded systems - it blinks an LED on th
 
 ## Hardware Requirements
 
+![960px-Micro-bit_v2](https://github.com/user-attachments/assets/ce0fe5b0-dc15-4ad8-a31c-e2cbbe288afc)
+
+
 - BBC micro:bit v2 (with nRF52833 microcontroller)
 
 ## Software Installation Guide
