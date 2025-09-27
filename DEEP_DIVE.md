@@ -137,54 +137,45 @@ arm-none-eabi-size target.elf
 
 ## Step 5: Flashing with probe-rs
 
+### micro:bit Hardware Architecture
+
+The BBC micro:bit v2 contains **two separate microcontrollers**:
+
+1. **Target MCU**: nRF52833 (Nordic ARM Cortex-M4) - runs your Rust code
+2. **Interface MCU**: nRF52820 (also Nordic ARM Cortex-M4) - acts as debug probe
+
+```
+PC ←→ USB ←→ nRF52820 (Interface) ←→ SWD ←→ nRF52833 (Target)
+                │                              │
+         [Debug Firmware]              [Your Rust Code]
+```
+
+### Interface MCU Functions
+The nRF52820 interface chip provides:
+- **USB-to-SWD bridge**: Converts USB commands to Serial Wire Debug protocol
+- **Virtual COM port**: For serial communication with your program
+- **Mass storage device**: Drag-and-drop .hex file programming (alternative to probe-rs)
+- **WebUSB interface**: Browser-based programming support
+
 ### probe-rs Architecture
 ```
-PC (probe-rs) ←→ Debug Probe ←→ SWD Interface ←→ nRF52833
+PC (probe-rs) ←→ USB ←→ nRF52820 Interface ←→ SWD ←→ nRF52833 Target
 ```
+
+When you run `cargo run`, probe-rs:
+1. **Connects via USB** to the nRF52820 interface chip
+2. **Sends debug commands** over a proprietary protocol  
+3. **Interface chip translates** these to SWD signals
+4. **Target chip responds** via SWD back through the interface
+
+This is different from external debug probes (J-Link, ST-Link) where the probe is separate hardware.
 
 ### Connection Process
-1. **Probe detection**: probe-rs scans for connected debug probes (J-Link, ST-Link, etc.)
-2. **Target identification**: Reads the chip's IDCODE to confirm it's an nRF52833
-3. **Debug interface**: Establishes SWD (Serial Wire Debug) connection
-4. **Halt CPU**: Stops the processor to allow memory access
+1. **USB enumeration**: PC detects micro:bit as USB device (VID: 0x0d28, PID: 0x0204)
+2. **Interface identification**: probe-rs recognizes the nRF52820 debug firmware
+3. **Target discovery**: Interface chip scans for connected nRF52833 via SWD
+4. **Debug session**: Establishes communication channel to target processor
 
-### Flashing Sequence
-
-```rust
-// Simplified probe-rs flashing process
-fn flash_target(elf_path: &str) -> Result<()> {
-    // 1. Parse ELF file
-    let elf = ElfFile::parse(&fs::read(elf_path)?)?;
-    
-    // 2. Connect to target
-    let mut session = Session::auto_attach("nRF52833_xxAA")?;
-    
-    // 3. Halt the core
-    let mut core = session.core(0)?;
-    core.halt()?;
-    
-    // 4. Erase required flash sectors
-    session.target().flash_loader().erase_sectors(sectors)?;
-    
-    // 5. Program flash memory
-    for segment in elf.program_iter() {
-        if segment.get_type() == Ok(Type::Load) {
-            let data = segment.get_data(&elf)?;
-            session.target().flash_loader().program_page(
-                segment.physical_addr(),
-                data
-            )?;
-        }
-    }
-    
-    // 6. Verify programming
-    session.target().flash_loader().verify()?;
-    
-    // 7. Reset and run
-    core.reset_and_halt()?;
-    core.run()?;
-}
-```
 
 ### Flash Memory Layout After Programming
 ```
@@ -201,11 +192,85 @@ nRF52833 Flash (512KB):
 
 ## Debug Interface Details
 
-### SWD (Serial Wire Debug)
-- **2-wire interface**: SWCLK (clock) and SWDIO (data)
-- **Access ports**: Debug Port (DP) and Access Port (AP)
-- **Memory access**: Can read/write any location in the CPU's memory map
-- **Breakpoints**: Hardware breakpoint units for debugging
+### SWD (Serial Wire Debug) Protocol
+
+SWD is ARM's proprietary debugging protocol, designed as a more efficient alternative to JTAG for ARM Cortex-M processors.
+
+#### Physical Interface
+- **SWCLK**: Serial Wire Clock - provides timing for data transfers
+- **SWDIO**: Serial Wire Data I/O - bidirectional data line
+- **Ground**: Common reference
+- **VCC**: Power reference (3.3V on micro:bit)
+
+#### Protocol Stack
+```
+Application (probe-rs) 
+       ↕
+Debug Port (DP) - Controls the debug interface
+       ↕  
+Access Port (AP) - Provides memory access
+       ↕
+Target Memory Bus - CPU's internal buses
+```
+
+#### How SWD Works
+1. **Packet Structure**: Commands are sent as 38-bit packets:
+   ```
+   [Start][APnDP][RnW][A2:3][Parity][Stop][Park][ACK][Data[0:31]][Parity]
+   ```
+
+2. **Debug Port (DP)**: Controls the debug session
+   - **IDCODE**: Identifies the target processor
+   - **CTRL/STAT**: Controls power domains and debug state
+   - **SELECT**: Chooses which Access Port to use
+
+3. **Access Port (AP)**: Provides memory access
+   - **AHB-AP**: Access to the CPU's AHB bus (memory, peripherals)
+   - **JTAG-AP**: Legacy JTAG compatibility
+   - **APB-AP**: Access to debug components
+
+#### Memory Access Process
+```rust
+// Conceptual SWD memory read sequence
+fn read_memory(address: u32) -> u32 {
+    // 1. Select the AHB Access Port
+    dp.write(SELECT, AHB_AP);
+    
+    // 2. Set up the memory address  
+    ap.write(TAR, address);  // Transfer Address Register
+    
+    // 3. Initiate the read
+    ap.write(CSW, SIZE_32BIT | AUTO_INCREMENT);  // Control/Status Word
+    
+    // 4. Read the data
+    let data = ap.read(DRW);  // Data Read/Write register
+    data
+}
+```
+
+#### Debug Features Enabled by SWD
+- **Flash Programming**: Direct write access to flash memory controllers
+- **Memory Inspection**: Read any RAM/peripheral register in real-time
+- **CPU Control**: Halt, reset, single-step execution
+- **Breakpoints**: Set hardware breakpoints (nRF52833 has 6 hardware breakpoints)
+- **Watchpoints**: Monitor memory locations for read/write access
+- **Real-time Trace**: Extract execution trace data (if supported by target)
+
+#### SWD vs JTAG Comparison
+| Feature | SWD | JTAG |
+|---------|-----|------|
+| Pins | 2 (+ power/ground) | 4 (+ power/ground) |
+| Speed | Up to 50MHz | Up to 25MHz typical |
+| Complexity | Simpler protocol | More complex state machine |
+| ARM Support | Native ARM protocol | Generic standard |
+| Trace | Supports SWO trace | Supports ETM trace |
+
+#### Security and SWD
+Modern ARM processors (including nRF52833) support:
+- **Debug Authentication**: Cryptographic authentication before debug access
+- **Secure Debug**: Different privilege levels for debug access  
+- **Access Port Protection**: Fine-grained control over memory regions
+- **Debug Disable**: Complete disabling of debug interface for production
 
 ### probe-rs Capabilities
 ```bash
@@ -238,40 +303,3 @@ panic = "abort"     # Smaller panic handler
 - **Flash**: Typically 4-20KB for simple examples
 - **RAM**: Static allocation preferred (no heap allocator)
 - **Stack**: Usually 2-8KB depending on recursion depth
-
-## Common Issues and Solutions
-
-### Linker Errors
-```
-error: linking with `rust-lld` failed: exit status: 1
-  = note: rust-lld: error: undefined symbol: main
-```
-**Solution**: Ensure `#[entry]` macro is used instead of regular `fn main()`
-
-### Memory Overflow
-```
-error: FLASH will not fit in region 'FLASH'
-  FLASH overflowed by 1024 bytes
-```
-**Solution**: Enable release optimizations or reduce code size
-
-### Probe Connection Issues
-```
-Error: Connecting to chip was unsuccessful
-Caused by: Target device did not respond
-```
-**Solutions**:
-- Check USB connection
-- Verify micro:bit is in programming mode
-- Try different USB cable/port
-- Check probe-rs supported devices
-
-## Conclusion
-
-This process transforms high-level Rust code into a bare-metal embedded program through careful orchestration of:
-- Cross-compilation targeting ARM Cortex-M4
-- Memory-aware linking with embedded constraints  
-- Precise flash programming via debug interfaces
-- Hardware-specific initialization and runtime support
-
-The beauty of the Rust embedded ecosystem is that most of this complexity is hidden behind ergonomic APIs, allowing developers to focus on application logic rather than low-level hardware details.
