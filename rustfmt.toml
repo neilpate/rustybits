@@ -1,0 +1,5 @@
+# Rust formatting configuration
+max_width = 120
+tab_spaces = 4
+newline_style = "Windows"
+use_small_heuristics = "Default"
