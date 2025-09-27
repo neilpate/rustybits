@@ -1,0 +1,64 @@
+# Rust build artifacts
+/target/
+**/*.rs.bk
+
+# IDE files (excluding .vscode which we want to track)
+.idea/
+*.swp
+*.swo
+*~
+
+# Windows OS generated files
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# Embedded development files
+*.bin
+*.hex
+*.elf
+*.map
+*.lst
+
+# Probe-rs and debugging
+.embed/
+*.probe
+
+# Memory dumps and debug files
+core
+*.core
+*.dump
+
+# Documentation build
+/doc/
+/docs/book/
+
+# Temporary files
+*.tmp
+*.temp
+*~
+
+# Log files
+*.log
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Editor temporary files
+.#*
+\#*#
+*.orig
+
+# Windows specific
+*.cab
+*.msi
+*.msm
+*.msp
+
