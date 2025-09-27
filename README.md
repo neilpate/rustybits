@@ -2,12 +2,9 @@
 
 
 
-A collection of Rust programming examples for the BBC micro:bit v2, demonstrating embedded Rust development using the nRF52833 microcontroller.![BBC micro:bit v2](https://upload.wikimedia.org/wikipedia/commons/thumb/1/1f/Microbit-v2.jpg/320px-Microbit-v2.jpg)
+A collection of Rust programming examples for the BBC micro:bit v2, demonstrating embedded Rust development using the nRF52833 microcontroller.
 
-
-
-![BBC micro:bit v2](https://upload.wikimedia.org/wikipedia/commons/thumb/1/1f/Microbit-v2.jpg/320px-Microbit-v2.jpg)A simple LED blinking example for the BBC micro:bit v2 written in Rust. This project demonstrates basic embedded Rust programming using the nRF52833 microcontroller and the micro:bit v2 development board.
-
+![960px-Micro-bit_v2](https://github.com/user-attachments/assets/ce0fe5b0-dc15-4ad8-a31c-e2cbbe288afc)
 
 
 This repository contains multiple examples showcasing different aspects of embedded Rust programming on the micro:bit platform. Each example is self-contained in its own directory with its own `Cargo.toml` and documentation.This project is based on examples from [The Embedded Rust Book](https://docs.rust-embedded.org/book/), which provides comprehensive guidance for embedded Rust development.
