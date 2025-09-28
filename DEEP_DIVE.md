@@ -144,18 +144,195 @@ rust-lld \
 The linker organizes code into sections:
 
 ```
-Flash (0x00000000 - 0x0007FFFF):
-├── .vector_table    # Interrupt vectors (@ 0x00000000)
-├── .text           # Program code
-├── .rodata         # Read-only data (strings, constants)
-└── .data (initial) # Initial values for RAM variables
+nRF52833 Memory Layout (after linking):
 
-RAM (0x20000000 - 0x2001FFFF):
-├── .data           # Initialized variables (copied from flash)
-├── .bss            # Zero-initialized variables
-├── .uninit         # Uninitialized variables
-└── Stack           # Grows downward from top of RAM
+FLASH (512K)                    RAM (128K)
+0x00000000                      0x20000000
+┌─────────────────────┐         ┌─────────────────────┐
+│ Vector Table        │         │                     │
+│ ├─ Stack Pointer    │         │                     │
+│ ├─ Reset Handler    │         │      Stack          │
+│ └─ Exception Vec... │         │        ↓            │
+├─────────────────────┤         │                     │
+│ .text (Your Code)   │         ├─────────────────────┤
+│ ├─ main()           │         │ .data (Init Vars)   │
+│ ├─ functions        │         │ ├─ global vars      │
+│ └─ compiled code    │         │ └─ static vars      │
+├─────────────────────┤         ├─────────────────────┤
+│ .rodata (Constants) │         │ .bss (Zero Vars)    │
+│ ├─ string literals  │         │ ├─ uninit globals   │
+│ └─ const arrays     │         │ └─ zeroed memory    │
+└─────────────────────┘         └─────────────────────┘
+0x0007FFFF                      0x2001FFFF
+
+Flash: Non-volatile storage      RAM: Fast volatile memory
 ```
+
+### Power-On Startup Sequence
+
+When the nRF52833 microcontroller powers on, here's exactly what happens:
+
+#### 1. Hardware Reset
+- **Power-on Reset (POR)**: CPU starts in a known state with all registers zeroed
+- **Clock Initialization**: Internal RC oscillator starts (64MHz HFCLK from 64MHz RC)
+- **Program Counter (PC)**: Set to `0x00000000` (start of flash memory)
+
+#### 2. Vector Table Lookup
+The CPU immediately reads the first 8 bytes of flash memory:
+
+```
+Address     Content                    Purpose
+0x00000000: [Initial Stack Pointer]   → Loaded into CPU's SP register
+0x00000004: [Reset Handler Address]   → Loaded into CPU's PC register
+```
+
+This is why the vector table **must** be at the very start of flash - the CPU hardware expects it there.
+
+#### 3. Stack Pointer Setup
+- CPU loads the initial stack pointer from `0x00000000`
+- For nRF52833: typically `0x20020000` (end of 128K RAM)
+- Stack grows downward from this address
+
+#### 4. Jump to Reset Handler
+- CPU loads the reset handler address from `0x00000004`
+- Jumps to that address (usually `cortex-m-rt`'s `Reset()` function)
+- **Your code hasn't run yet** - this is still initialization!
+
+#### 5. Runtime Initialization (cortex-m-rt)
+The reset handler is provided by the `cortex-m-rt` crate and performs critical setup:
+
+```rust
+// This code comes from the cortex-m-rt crate source:
+// https://github.com/rust-embedded/cortex-m-rt/blob/master/src/lib.rs
+
+#[no_mangle]
+pub unsafe extern "C" fn Reset() -> ! {
+    // Use symbols provided by the linker script
+    extern "C" {
+        static mut _sbss: u32;
+        static mut _ebss: u32;
+        static mut _sdata: u32;
+        static mut _edata: u32;
+        static _sidata: u32;
+    }
+
+    // Copy initialized data from flash to RAM (.data section)
+    let mut src = &_sidata as *const u32;
+    let mut dest = &mut _sdata as *mut u32;
+    while dest < &mut _edata as *mut u32 {
+        *dest = *src;
+        dest = dest.offset(1);
+        src = src.offset(1);
+    }
+
+    // Zero out uninitialized variables (.bss section)
+    let mut dest = &mut _sbss as *mut u32;
+    while dest < &mut _ebss as *mut u32 {
+        *dest = 0;
+        dest = dest.offset(1);
+    }
+
+    // Call any pre-init hooks
+    #[cfg(feature = "device")]
+    extern "Rust" { fn __pre_init(); }
+    #[cfg(feature = "device")]
+    __pre_init();
+
+    // Finally, call your main() function!
+    main();  // ← YOUR CODE STARTS HERE
+}
+```
+
+**Where this comes from:**
+- **Source**: `cortex-m-rt` crate (specifically `cortex-m-rt/src/lib.rs`)
+- **When it's linked**: Automatically included when you add `cortex-m-rt` as a dependency
+- **How it's used**: The `#[entry]` macro on your `main()` ensures this reset handler calls your code
+
+#### 6. Your Code Begins
+Only after all this initialization does `main()` get called and your Rust code starts executing.
+
+### How the Reset Code Gets Into Your Binary
+
+The reset handler code doesn't appear in your source files, but it gets included in your final binary through Rust's dependency and linking system:
+
+#### 1. Dependency Declaration
+In your `Cargo.toml`:
+```toml
+[dependencies]
+cortex-m-rt = "0.7.0"
+```
+This pulls in the `cortex-m-rt` crate containing the reset handler implementation.
+
+#### 2. The `#[entry]` Macro Magic
+When you write:
+```rust
+#[entry]
+fn main() -> ! {
+    // your code
+}
+```
+
+The `#[entry]` macro (from `cortex-m-rt`) transforms your code:
+- **Renames** your `main()` function internally (to avoid conflicts)
+- **Creates** a proper reset handler that calls your renamed main
+- **Sets up** the vector table to point to this reset handler
+- **Ensures** proper function signatures for embedded entry points
+
+#### 3. Automatic Linking Process
+When you run `cargo build`, the linker automatically:
+
+1. **Compiles your code** → `main.o` (contains your LED logic)
+2. **Compiles cortex-m-rt** → `cortex_m_rt.o` (contains reset handler)
+3. **Links them together** using linker scripts from cortex-m-rt
+4. **Places everything** at the correct memory addresses
+
+#### 4. What Gets Linked Into Your Binary
+Your final ELF file contains code from multiple sources:
+
+```
+Your Binary Memory Layout:
+┌─ Vector Table (from cortex-m-rt)
+│  ├─ 0x00000000: [Stack Pointer] 
+│  ├─ 0x00000004: [Reset Handler Address] ← Points to cortex-m-rt's Reset()
+│  └─ 0x00000008: [Exception handlers...]
+├─ Reset Handler Code (from cortex-m-rt crate)
+│  ├─ RAM initialization loops
+│  ├─ .data/.bss setup code  
+│  └─ Call to your main() ← Handoff to your code
+├─ Your Application Code (from main.rs)
+│  ├─ LED register manipulation
+│  ├─ Delay loops with asm::nop()
+│  └─ Infinite loop logic
+└─ Panic Handler (from panic-halt crate)
+   └─ Simple infinite loop on panic
+```
+
+#### 5. Linker Script Coordination
+The cortex-m-rt crate provides `link.x` which:
+- **Defines** where each section goes in memory
+- **Ensures** the vector table is at address `0x00000000`
+- **Connects** the reset handler to your `#[entry]` function
+- **Handles** memory region definitions and stack setup
+
+#### 6. Build-Time Integration
+The linking happens transparently during `cargo build`:
+```bash
+# What cargo does internally:
+rustc --target thumbv7em-none-eabihf src/main.rs     # Compile your code
+rustc --target thumbv7em-none-eabihf cortex-m-rt...  # Compile runtime
+rust-lld -Tlink.x -Tmemory.x main.o cortex_m_rt.o   # Link everything
+```
+
+The reset handler is **real compiled ARM assembly code** that gets included in your binary - you just don't write it yourself. This is a key benefit of Rust's embedded ecosystem: critical startup code is provided by well-tested crates.
+
+### Why This Matters
+
+This startup sequence explains several important concepts:
+
+- **Why `memory.x` is critical**: The linker must place the vector table at exactly `0x00000000`
+- **Why `#[entry]` works**: It ensures your `main()` gets called by the reset handler
+- **Why globals work**: They're initialized before your code runs
+- **Why the stack works**: It's set up by hardware before any function calls
 
 ### Critical Linking Elements
 
