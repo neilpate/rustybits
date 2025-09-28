@@ -79,6 +79,177 @@ For debugging to work properly, you need:
 
 This is extremely powerful for embedded development because you can debug **on the actual hardware** while your program runs on the micro:bit, inspecting real GPIO states, timer values, and memory contents!
 
+## VS Code Workspace Configuration
+
+Setting up VS Code for embedded Rust development requires several configuration files that work together to provide seamless building, running, and debugging capabilities.
+
+### Project Structure
+```
+rustymicrobit/
+├── .vscode/
+│   ├── launch.json      # Debug configurations
+│   ├── tasks.json       # Build and run tasks
+│   └── settings.json    # Workspace settings (optional)
+├── example_01_hello_world/
+│   └── .cargo/
+│       └── config.toml  # Per-example cargo configuration
+└── Cargo.toml          # Workspace definition
+```
+
+### Tasks Configuration (`.vscode/tasks.json`)
+
+Tasks define how VS Code executes build and run operations:
+
+```json
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build Example 01",
+            "type": "shell",
+            "command": "cargo",
+            "args": [
+                "build",
+                "--target",
+                "thumbv7em-none-eabihf"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/example_01_hello_world"
+            },
+            "group": "build",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": ["$rustc"]
+        },
+        {
+            "label": "rust: cargo build",
+            "type": "shell",
+            "command": "cargo",
+            "args": [
+                "build",
+                "--target",
+                "thumbv7em-none-eabihf"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/example_01_hello_world"
+            },
+            "group": "build",
+            "problemMatcher": ["$rustc"]
+        }
+    ]
+}
+```
+
+#### Key Task Properties:
+- **`label`**: Name displayed in VS Code's task menu and referenced by other configurations
+- **`type: "shell"`**: Executes commands in the system shell
+- **`command` & `args`**: The actual command to run (equivalent to `cargo build --target thumbv7em-none-eabihf`)
+- **`options.cwd`**: Working directory - crucial for finding local `.cargo/config.toml`
+- **`group: "build"`**: Groups related tasks together
+- **`problemMatcher: ["$rustc"]`**: Parses Rust compiler output to show errors in VS Code's Problems panel
+- **`presentation`**: Controls how the terminal output is displayed
+
+#### Special Task Labels:
+- **`"rust: cargo build"`** and **`"rust: cargo run"`**: Override rust-analyzer's built-in tasks
+- This ensures that when you click the ▶️ Run button, it uses our configuration instead of the default
+
+### Launch Configuration (`.vscode/launch.json`)
+
+Launch configurations define debugging sessions:
+
+```json
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "probe-rs-debug",
+            "request": "launch",
+            "name": "Debug Example 01",
+            "cwd": "${workspaceFolder}/example_01_hello_world",
+            "connectUnderReset": false,
+            "chip": "nRF52833_xxAA",
+            "flashingConfig": {
+                "flashingEnabled": true,
+                "haltAfterReset": false
+            },
+            "coreConfigs": [
+                {
+                    "coreIndex": 0,
+                    "programBinary": "../target/thumbv7em-none-eabihf/debug/example_01_hello_world"
+                }
+            ],
+            "preLaunchTask": "Build Example 01"
+        }
+    ]
+}
+```
+
+#### Key Launch Properties:
+- **`type: "probe-rs-debug"`**: Uses the probe-rs VS Code extension for ARM debugging
+- **`request: "launch"`**: Starts a new debugging session (vs "attach" to existing)
+- **`cwd`**: Working directory for the debug session
+- **`chip: "nRF52833_xxAA"`**: Specific microcontroller target for probe-rs
+- **`flashingConfig`**: Controls how the program is loaded onto the microcontroller
+- **`programBinary`**: Path to the compiled ELF file to debug
+- **`preLaunchTask`**: Task to run before debugging (builds the project)
+
+### Cargo Configuration (`.cargo/config.toml`)
+
+Each example has its own cargo configuration:
+
+```toml
+[build]
+target = "thumbv7em-none-eabihf"
+
+[target.thumbv7em-none-eabihf]
+runner = "probe-rs run --chip nRF52833_xxAA"
+rustflags = ["-C", "linker=rust-lld", "-C", "link-arg=-Tlink.x"]
+```
+
+#### Configuration Breakdown:
+- **`[build] target`**: Default compilation target for this directory
+- **`runner`**: Command executed when you run `cargo run`
+- **`rustflags`**: Additional flags passed to the Rust compiler:
+  - **`-C linker=rust-lld`**: Use LLVM's linker (works better for embedded)
+  - **`-C link-arg=-Tlink.x`**: Use cortex-m-rt's linker script
+
+### VS Code Settings (`.vscode/settings.json`) - Optional
+
+Workspace-specific settings can enhance the development experience:
+
+```json
+{
+    "rust-analyzer.cargo.features": "all"
+}
+```
+
+#### Setting Explanations:
+- **`rust-analyzer.cargo.features: "all"`**: Enables all available Cargo features during code analysis, providing complete IntelliSense and error checking for all feature-gated code
+
+### Integration Flow
+
+When you click the ▶️ Run button in VS Code:
+
+1. **rust-analyzer** detects the `#[entry]` function
+2. **Looks up** the `"rust: cargo run"` task in `tasks.json`
+3. **Executes** `cargo run --target thumbv7em-none-eabihf` in the correct directory
+4. **Cargo** uses the local `.cargo/config.toml` for additional settings
+5. **Builds** the project with the ARM target
+6. **Runs** the configured runner: `probe-rs run --chip nRF52833_xxAA`
+7. **probe-rs** flashes and executes the program on the micro:bit
+
+For debugging (🐛 button):
+
+1. **VS Code** finds the matching launch configuration
+2. **Runs** the `preLaunchTask` to build the project
+3. **Launches** probe-rs in debug mode
+4. **Connects** to the micro:bit and loads the program
+5. **Starts** the debug session with breakpoint support
+
+This configuration provides a seamless embedded development experience where a single click builds, flashes, and runs your code on real hardware!
+
 ## Overview
 
 The journey from Rust source to running embedded code involves several critical steps:
