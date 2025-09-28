@@ -129,18 +129,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a21dea9854beb860f3062d10228ce9b976da520a73474aed3171ec276bc0c032"
 
 [[package]]
-name = "example_01_hello_world"
-version = "0.1.0"
-dependencies = [
- "cortex-m",
- "cortex-m-rt",
- "embedded-hal 1.0.0",
- "microbit-v2",
- "nrf52833-hal",
- "panic-halt",
-]
-
-[[package]]
 name = "example_02_hello_world_minimal_dependencies"
 version = "0.1.0"
 dependencies = [

@@ -12,9 +12,38 @@ This is the "Hello World" for embedded systems - it blinks an LED! The program:
 
 ## Running this example
 
+This example is completely self-contained - it includes all necessary configuration files:
+
+### From Command Line
 ```bash
 cd example_01_hello_world
 cargo run
+```
+
+### From VS Code
+1. Open `src/main.rs` in VS Code
+2. Click the ▶️ **Run** button above the `#[entry]` function
+3. Or use `Ctrl+Shift+P` → "Tasks: Run Task" → "Run Example 01"
+
+### What Happens
+- **Builds** the project for ARM Cortex-M4 (`thumbv7em-none-eabihf` target)
+- **Flashes** the binary to your micro:bit via probe-rs
+- **Runs** the program on the micro:bit hardware
+- **LED blinks** at row 1, column 1 position
+
+## Project Structure
+
+This example contains everything needed to build and run independently:
+
+```
+example_01_hello_world/
+├── .cargo/
+│   └── config.toml      # Build configuration (ARM target, probe-rs runner)
+├── src/
+│   └── main.rs          # Your Rust code
+├── Cargo.toml           # Dependencies and project metadata
+├── Cargo.lock           # Locked dependency versions (for reproducible builds)
+└── Embed.toml           # probe-rs flashing configuration
 ```
 ## Code Overview
 
@@ -77,3 +106,41 @@ fn main() -> ! {
 4. **Main Loop**: Embedded systems typically run forever, so we use an infinite loop:
    - `timer0.delay_ms(100)` - Precise 100ms delay using hardware timer
    - `row1.set_high()/.set_low()` - Toggle the LED state to create blinking effect
+
+## Configuration Files
+
+### `.cargo/config.toml`
+```toml
+[build]
+target = "thumbv7em-none-eabihf"  # ARM Cortex-M4 with hardware floating point
+
+[target.thumbv7em-none-eabihf]
+runner = "probe-rs run --chip nRF52833_xxAA"  # Flash and run on micro:bit
+rustflags = ["-C", "linker=rust-lld", "-C", "link-arg=-Tlink.x"]
+```
+
+### `Embed.toml`
+```toml
+[default.general]
+chip = "nrf52833_xxAA"    # micro:bit v2 chip
+
+[default.reset]
+halt_afterwards = false   # Continue running after flash
+
+[default.rtt]
+enabled = false          # Real-Time Transfer (for debugging output)
+
+[default.gdb]
+enabled = false          # GDB debugging interface
+```
+
+## Dependencies
+
+This example uses several key embedded Rust crates:
+
+- **`microbit-v2 = "0.13.0"`** - Board Support Package for micro:bit v2
+- **`cortex-m-rt = "0.7.3"`** - Runtime and startup code for ARM Cortex-M
+- **`embedded-hal = "0.2.7"`** - Hardware Abstraction Layer traits
+- **`panic-halt = "0.2.0"`** - Simple panic handler for embedded systems
+
+The `microbit-v2` crate provides high-level access to micro:bit hardware while the other crates provide the embedded Rust foundation.

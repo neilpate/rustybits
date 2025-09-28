@@ -6,7 +6,9 @@
             "type": "shell",
             "command": "cargo",
             "args": [
-                "build"
+                "build",
+                "--target",
+                "thumbv7em-none-eabihf"
             ],
             "options": {
                 "cwd": "${workspaceFolder}/example_01_hello_world"
@@ -25,7 +27,9 @@
             "type": "shell",
             "command": "cargo",
             "args": [
-                "run"
+                "run",
+                "--target",
+                "thumbv7em-none-eabihf"
             ],
             "options": {
                 "cwd": "${workspaceFolder}/example_01_hello_world"
@@ -35,6 +39,40 @@
                 "reveal": "always",
                 "panel": "new"
             },
+            "problemMatcher": [
+                "$rustc"
+            ]
+        },
+        {
+            "label": "rust: cargo build",
+            "type": "shell",
+            "command": "cargo",
+            "args": [
+                "build",
+                "--target",
+                "thumbv7em-none-eabihf"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/example_01_hello_world"
+            },
+            "group": "build",
+            "problemMatcher": [
+                "$rustc"
+            ]
+        },
+        {
+            "label": "rust: cargo run",
+            "type": "shell",
+            "command": "cargo",
+            "args": [
+                "run",
+                "--target",
+                "thumbv7em-none-eabihf"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/example_01_hello_world"
+            },
+            "group": "build",
             "problemMatcher": [
                 "$rustc"
             ]

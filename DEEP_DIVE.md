@@ -90,11 +90,27 @@ rustymicrobit/
 │   ├── launch.json      # Debug configurations
 │   ├── tasks.json       # Build and run tasks
 │   └── settings.json    # Workspace settings (optional)
+├── Embed.toml           # probe-rs configuration (shared)
 ├── example_01_hello_world/
-│   └── .cargo/
-│       └── config.toml  # Per-example cargo configuration
-└── Cargo.toml          # Workspace definition
+│   ├── .cargo/
+│   │   └── config.toml  # Example-specific cargo configuration
+│   ├── src/
+│   │   └── main.rs
+│   ├── Cargo.toml       # Example dependencies and metadata
+│   ├── Cargo.lock       # Locked dependency versions
+│   └── Embed.toml       # probe-rs configuration (per-example)
+├── example_02_hello_world_minimal_dependencies/
+│   ├── .cargo/
+│   │   └── config.toml  # Example-specific cargo configuration
+│   ├── src/
+│   │   └── main.rs
+│   ├── Cargo.toml       # Example dependencies and metadata
+│   ├── Cargo.lock       # Locked dependency versions
+│   └── Embed.toml       # probe-rs configuration (per-example)
+└── README.md            # Project overview
 ```
+
+**Note**: This project uses **independent examples** rather than a Cargo workspace. Each example is a complete, standalone Rust project that can be copied and used independently.
 
 ### Tasks Configuration (`.vscode/tasks.json`)
 
@@ -200,7 +216,7 @@ Launch configurations define debugging sessions:
 
 ### Cargo Configuration (`.cargo/config.toml`)
 
-Each example has its own cargo configuration:
+Each example has its own cargo configuration in `example_XX/.cargo/config.toml`, making each example completely self-contained:
 
 ```toml
 [build]
@@ -231,27 +247,36 @@ Workspace-specific settings can enhance the development experience:
 #### Setting Explanations:
 - **`rust-analyzer.cargo.features: "all"`**: Enables all available Cargo features during code analysis, providing complete IntelliSense and error checking for all feature-gated code
 
+### Independent Examples Architecture
+
+This project uses **independent examples** rather than a Cargo workspace:
+
+- **Each example is self-contained**: Complete with its own `Cargo.toml`, `Cargo.lock`, and `.cargo/config.toml`
+- **No workspace dependencies**: Examples can be copied and used independently
+- **Reproducible builds**: Each `Cargo.lock` ensures identical dependency versions
+- **Shared configuration**: VS Code settings and `Embed.toml` are shared across examples
+
 ### Integration Flow
 
 When you click the ▶️ Run button in VS Code:
 
-1. **rust-analyzer** detects the `#[entry]` function
+1. **rust-analyzer** detects the `#[entry]` function in the current file
 2. **Looks up** the `"rust: cargo run"` task in `tasks.json`
-3. **Executes** `cargo run --target thumbv7em-none-eabihf` in the correct directory
-4. **Cargo** uses the local `.cargo/config.toml` for additional settings
-5. **Builds** the project with the ARM target
+3. **Executes** `cargo run --target thumbv7em-none-eabihf` from the example directory
+4. **Cargo** uses the local `.cargo/config.toml` for runner and build settings
+5. **Builds** the project with the ARM target using example-specific dependencies
 6. **Runs** the configured runner: `probe-rs run --chip nRF52833_xxAA`
-7. **probe-rs** flashes and executes the program on the micro:bit
+7. **probe-rs** uses `Embed.toml` configuration and flashes the program to micro:bit
 
 For debugging (🐛 button):
 
 1. **VS Code** finds the matching launch configuration
 2. **Runs** the `preLaunchTask` to build the project
-3. **Launches** probe-rs in debug mode
+3. **Launches** probe-rs in debug mode with `Embed.toml` settings
 4. **Connects** to the micro:bit and loads the program
 5. **Starts** the debug session with breakpoint support
 
-This configuration provides a seamless embedded development experience where a single click builds, flashes, and runs your code on real hardware!
+This configuration provides a seamless embedded development experience where each example is completely independent while maintaining single-click build/flash/run capabilities!
 
 ## Overview
 
