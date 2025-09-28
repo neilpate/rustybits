@@ -73,34 +73,13 @@ Use breakpoints to pause execution and inspect program state:
 
 Setting up VS Code for embedded Rust development requires several configuration files that work together to provide seamless building, running, and debugging capabilities.
 
-### Project Structure
+### VS Code Configuration Files Location
 ```
-rustymicrobit/
-├── .vscode/
-│   ├── launch.json      # Debug configurations
-│   ├── tasks.json       # Build and run tasks
-│   └── settings.json    # Workspace settings (optional)
-├── Embed.toml           # probe-rs configuration (shared)
-├── example_01_hello_world/
-│   ├── .cargo/
-│   │   └── config.toml  # Example-specific cargo configuration
-│   ├── src/
-│   │   └── main.rs
-│   ├── Cargo.toml       # Example dependencies and metadata
-│   ├── Cargo.lock       # Locked dependency versions
-│   └── Embed.toml       # probe-rs configuration (per-example)
-├── example_02_hello_world_minimal_dependencies/
-│   ├── .cargo/
-│   │   └── config.toml  # Example-specific cargo configuration
-│   ├── src/
-│   │   └── main.rs
-│   ├── Cargo.toml       # Example dependencies and metadata
-│   ├── Cargo.lock       # Locked dependency versions
-│   └── Embed.toml       # probe-rs configuration (per-example)
-└── README.md            # Project overview
+.vscode/
+├── tasks.json       # Build and run tasks
+├── launch.json      # Debug configurations  
+└── settings.json    # Workspace settings (optional)
 ```
-
-**Note**: This project uses **independent examples** rather than a Cargo workspace. Each example is a complete, standalone Rust project that can be copied and used independently.
 
 ## Configuration Files
 
