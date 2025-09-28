@@ -169,7 +169,8 @@ The crates do enormous work during compilation to transform your Rust code into 
 
 > **💡 Tip**: This example is completely self-contained. You can copy this entire directory and use it as a starting point for your own micro:bit projects!
 
-## Want to Learn More?
+## Additional Resources
 
 - **[deep_dive.md](../deep_dive.md)** - Technical explanation of how Rust becomes running hardware code
+- **[hardware.md](../hardware.md)** - How memory mapping physically works with address buses and internal memory
 - **[vscode_setup.md](../vscode_setup.md)** - Complete VS Code configuration guide

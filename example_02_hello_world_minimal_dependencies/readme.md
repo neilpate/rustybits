@@ -217,3 +217,5 @@ This happens automatically before your code runs, setting up the memory environm
 ---
 
 > **🚀 Ready for the Final Challenge?** Check out [Example 03](../example_03_hello_world_no_dependencies/) which achieves **ZERO dependencies** by implementing everything from scratch - including the reset handler, vector table, and linker script! You'll see exactly how `cortex-m-rt` works by building it yourself. It's the ultimate deep dive into embedded systems architecture!
+
+> **🔍 Want to Understand the Complete Hardware Story?** See [hardware.md](../hardware.md) for detailed explanations of address buses, SRAM cells, flash programming, and how the nRF52833's internal memory architecture works at the silicon level!

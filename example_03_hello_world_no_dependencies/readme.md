@@ -298,3 +298,22 @@ probe-rs run --chip nRF52833_xxAA target/main.elf
 | `main.o` | Compiled object file | `rustc` |
 | `main.elf` | Linked executable | Linker |
 | `main.bin` | Flash-ready binary | `objcopy` |
+
+### **What Makes This Special**
+
+In a typical embedded project with `cortex-m-rt`:
+- ✨ **Magic happens**: Vector table, reset handler, and linker script auto-generated
+- 🎁 **Convenience**: Everything "just works" but you don't understand why
+
+In your zero-dependency implementation:
+- 🔧 **Full control**: You implement every piece of the puzzle yourself
+- 🎓 **Complete understanding**: You know exactly what every byte does
+- 🚀 **Ultimate learning**: From Rust source to ARM machine code, no mysteries!
+
+This is the complete journey from your Rust code to a blinking LED on real hardware! 🎉
+
+## Additional Resources
+
+- **[hardware.md](../hardware.md)** - Deep dive into address buses, internal memory architecture, and how your code becomes photons from the LED
+- **[Example 01](../example_01_hello_world/)** - High-level HAL approach for comparison
+- **[Example 02](../example_02_hello_world_minimal_dependencies/)** - Intermediate register-level programming

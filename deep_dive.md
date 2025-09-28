@@ -2,7 +2,8 @@
 
 This document explains the detailed process of how Rust code becomes a running program on the BBC micro:bit v2, covering compilation, linking, memory layout, and flashing.
 
-> **Note**: For VS Code setup and configuration details, see [vscode_setup.md](vscode_setup.md).
+> **Note**: For VS Code setup and configuration details, see [vscode_setup.md](vscode_setup.md).  
+> **Hardware Focus**: For detailed explanations of address buses, internal memory architecture, and physical hardware operation, see [hardware.md](hardware.md).
 
 ## Project Architecture
 
