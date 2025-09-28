@@ -2,7 +2,13 @@
 #![no_std]
 
 use cortex_m_rt::entry;
-use panic_halt as _;
+
+// Custom panic handler - replaces panic-halt crate
+#[panic_handler]
+fn panic(_: &core::panic::PanicInfo) -> ! {
+    // Just halt - minimal panic handling
+    loop {}
+}
 
 // GPIO registers for nRF52833
 const GPIO_P0_OUTSET: *mut u32 = 0x5000_0508 as *mut u32;
