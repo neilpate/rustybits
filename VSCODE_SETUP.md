@@ -8,7 +8,7 @@ This document explains how to configure VS Code for seamless embedded Rust devel
 When you open any example's `src/main.rs` file in VS Code, you'll notice small interactive buttons above the `#[entry]` function:
 
 - **▶️ Run**: Executes `cargo run` and flashes to hardware
-- **🐛 Debug**: Launches debugging session (requires debug panel)
+- **🐛 Debug**: ⚠️ **Does not work for embedded projects** - use the Debug Panel instead (F5 or Run & Debug sidebar)
 
 ### How Code Lens Works
 The **rust-analyzer** Language Server analyzes your code and provides these "Code Lens" actions by:
@@ -27,6 +27,47 @@ When you click the ▶️ Run button, rust-analyzer executes `cargo run` which:
 4. **Runs** the program on the hardware
 
 This seamlessly integrates the entire compilation → linking → flashing pipeline into a single click.
+
+### Debugging Workflow
+
+**Important**: The 🐛 Debug button in Code Lens does **not** work for embedded projects. Instead, use the proper debugging workflow:
+
+#### To Start Debugging:
+1. **Open the Debug Panel**: Click the "Run and Debug" icon in the sidebar (or press `Ctrl+Shift+D`)
+2. **Select Configuration**: Choose "Debug Example 01" or "Debug Example 02" from the dropdown
+3. **Start Debugging**: Click the green play button or press `F5`
+
+#### What Happens During Debug:
+1. **Pre-build**: Runs the configured `preLaunchTask` to build the project
+2. **Flash with Debug Info**: probe-rs flashes the program with debug symbols
+3. **Attach Debugger**: Connects GDB-compatible debugger to the running hardware
+4. **Debug Interface**: VS Code opens debugging panels (variables, call stack, breakpoints)
+
+#### Debugging Features Available:
+- **Breakpoints**: Click in the margin to pause execution at specific lines
+- **Step Execution**: Step over, step into, step out of functions
+- **Variable Inspection**: View and modify variable values in real-time
+- **Memory View**: Examine raw memory and processor registers
+- **Call Stack**: See the function call hierarchy
+
+### Visual Guide
+
+#### Code Lens Run Button
+When viewing the source code, you'll see a small ▶️ "Run" arrow above the `#[entry]` function. This is provided by rust-analyzer and lets you run the example with a single click!
+
+<img width="1660" height="773" alt="VS Code Run button in source code" src="https://github.com/user-attachments/assets/744fbe24-fdd4-4cfb-af37-8be0536d5d28" />
+
+#### Debug Session Interface
+You can debug examples directly on the micro:bit hardware. Start the session using the Debug Panel (F5):
+
+<img width="2257" height="1084" alt="VS Code debugging session" src="https://github.com/user-attachments/assets/84128dfc-99a1-4703-adae-b770a1a1c9fa" />
+
+The debug configuration is set up to halt the CPU on load. You can resume execution by pressing the run arrow at the top.
+
+#### Breakpoint Debugging
+Use breakpoints to pause execution and inspect program state:
+
+<img width="1633" height="800" alt="VS Code breakpoint debugging" src="https://github.com/user-attachments/assets/25fded61-5eb7-4921-a8c8-90032c17cc9f" />
 
 ## VS Code Workspace Configuration
 
@@ -143,15 +184,6 @@ Tasks define how VS Code executes build and run operations:
 }
 ```
 
-#### Key Task Properties:
-- **`label`**: Name displayed in VS Code's task menu and referenced by other configurations
-- **`type: "shell"`**: Executes commands in the system shell
-- **`command` & `args`**: The actual command to run (equivalent to `cargo build` and `cargo run`)
-- **`options.cwd`**: Working directory - crucial for finding local `.cargo/config.toml` which specifies the target
-- **`group: "build"`**: Groups related tasks together
-- **`problemMatcher: ["$rustc"]`**: Parses Rust compiler output to show errors in VS Code's Problems panel
-- **`presentation`**: Controls how the terminal output is displayed
-
 #### Special Tasks:
 - **`"rust: cargo build"`** and **`"rust: cargo run"`**: Override rust-analyzer's built-in tasks
 - This ensures that when you click the ▶️ Run button, it uses our configuration with the correct working directory
@@ -243,87 +275,3 @@ To use this setup, you need these VS Code extensions:
 2. **probe-rs-debugger** (`probe-rs.probe-rs-debugger`) 
    - Provides embedded debugging support for ARM microcontrollers
    - Required for the debug configurations to work
-
-### Installation:
-1. **Open VS Code Extensions** (Ctrl+Shift+X)
-2. **Search for** each extension by name
-3. **Click Install** for each extension
-
-## Usage Workflows
-
-### Development Workflow:
-1. **Open** any example's `src/main.rs` file
-2. **Click ▶️ Run** - Builds and flashes to micro:bit automatically
-3. **Observe** program running on hardware
-4. **Make changes** and repeat
-
-### Debugging Workflow:
-1. **Build first** - Click ▶️ Run to ensure fresh binary
-2. **Open Debug Panel** - Press Ctrl+Shift+D
-3. **Select Configuration** - Choose "Debug Example 01" or "Debug Example 02"
-4. **Start Debugging** - Press F5 or click play button
-5. **Set breakpoints** - Click in left margin of code
-6. **Step through code** - Use debug controls
-
-### Task Menu Workflow:
-1. **Open Command Palette** - Press Ctrl+Shift+P
-2. **Type** "Tasks: Run Task"
-3. **Select** any available task (Build Example 01, etc.)
-4. **Task runs** in integrated terminal
-
-## Independent Examples Architecture
-
-This project uses **independent examples** rather than a Cargo workspace:
-
-- **Each example is self-contained**: Complete with its own `Cargo.toml`, `Cargo.lock`, and `.cargo/config.toml`
-- **No workspace dependencies**: Examples can be copied and used independently
-- **Reproducible builds**: Each `Cargo.lock` ensures identical dependency versions
-- **Shared configuration**: VS Code settings and `Embed.toml` are shared across examples
-
-## Integration Flow
-
-### When you click ▶️ Run:
-
-1. **rust-analyzer** detects the `#[entry]` function in the current file
-2. **Looks up** the `"rust: cargo run"` task in `tasks.json`
-3. **Executes** `cargo run` from the example directory (`${fileDirname}/..`)
-4. **Cargo** uses the local `.cargo/config.toml` for runner and build settings
-5. **Builds** the project with the ARM target using example-specific dependencies
-6. **Runs** the configured runner: `probe-rs run --chip nRF52833_xxAA`
-7. **probe-rs** uses `Embed.toml` configuration and flashes the program to micro:bit
-
-### When you debug (Debug Panel → F5):
-
-1. **VS Code** finds the selected launch configuration ("Debug Example 01" or "Debug Example 02")
-2. **Runs** the `preLaunchTask` to build the project from the correct directory
-3. **Launches** probe-rs in debug mode with `Embed.toml` settings
-4. **Connects** to the micro:bit and loads the program with debug symbols
-5. **Starts** the debug session with breakpoint support
-
-This configuration provides a seamless embedded development experience where each example is completely independent while maintaining single-click build/flash/run capabilities!
-
-## Troubleshooting
-
-### Common Issues:
-
-#### "Cannot find Cargo.toml" Error:
-- **Cause**: Task running from wrong directory
-- **Solution**: Make sure you have the example's `main.rs` file open when clicking ▶️ Run
-
-#### Debug "Corrupted dump file" Error:
-- **Cause**: VS Code trying to use wrong debugger
-- **Solution**: Ensure probe-rs-debugger extension is installed and use Debug Panel (not Code Lens debug button)
-
-#### Build Fails with Target Error:
-- **Cause**: Missing or incorrect `.cargo/config.toml`
-- **Solution**: Verify each example has its own `.cargo/config.toml` with correct target specification
-
-#### probe-rs Connection Failed:
-- **Cause**: micro:bit not connected or wrong chip specified
-- **Solution**: Check USB connection and verify chip setting in launch.json matches your micro:bit version
-
-### Tips:
-- **Always open the specific example's `main.rs`** before running or debugging
-- **Use the Debug Panel** for debugging rather than the Code Lens debug button
-- **Check the terminal output** for detailed error messages
-- **Ensure micro:bit is connected** before running or debugging
