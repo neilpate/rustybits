@@ -44,13 +44,19 @@ Follow the installation guide from [The Embedded Rust Book - Installation](https
 ### Running Examples
 Each example is a complete, independent Rust project:
 
+**In VS Code (Recommended):**
+1. Open an example's `src/main.rs` file in VS Code
+2. Click the ▶️ **Run** button above the `#[entry]` function
+3. The program builds and flashes automatically to your micro:bit
+
+**From Command Line:**
 ```bash
 # Navigate to an example and run it
 cd example_01_hello_world
 cargo run
 ```
 
-The program will build and flash automatically to your connected micro:bit.
+> **💡 Tip**: See [VSCODE_SETUP.md](VSCODE_SETUP.md) for complete VS Code configuration and debugging setup.
 
 ## Project Architecture
 
