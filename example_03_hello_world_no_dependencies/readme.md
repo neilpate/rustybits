@@ -118,6 +118,55 @@ SECTIONS
 }
 ```
 
+#### **🔧 What the Linker Script Does**
+
+The linker script is like a **memory blueprint** that tells the linker exactly where to place your code and data in the microcontroller's memory. Here's what each section accomplishes:
+
+**📍 Vector Table Placement (`.vector_table`)**
+- **Critical requirement**: ARM Cortex-M processors expect the vector table at address `0x00000000`
+- **Contains**: Stack pointer + addresses of interrupt/exception handlers
+- **Must be first**: If this isn't at address 0, the processor won't boot!
+
+**💾 Code Section (`.text`)**  
+- **Stores**: All your compiled functions and string literals in flash memory
+- **Why flash**: Non-volatile storage - your program survives power loss
+- **Read-only**: Code doesn't change during execution
+
+**🔄 Initialized Data (`.data`)**
+- **The clever part**: Data lives in two places!
+  - **Stored** in flash (survives power loss) 
+  - **Runs** from RAM (faster access during execution)
+- **Symbols created**: `_sidata` (flash location), `_sdata`/`_edata` (RAM boundaries)
+- **Reset handler uses these** to copy data from flash → RAM at startup
+
+**🆕 Uninitialized Data (`.bss`)**
+- **Purpose**: Variables that start with zero/default values
+- **RAM only**: No need to store zeros in flash (waste of space)
+- **Symbols created**: `_sbss`/`_ebss` tell reset handler what to zero out
+- **Examples**: `static mut COUNTER: u32 = 0;`
+
+**🔗 Symbol Magic**
+The linker script creates these essential symbols that your `Reset()` function uses:
+```rust
+// Copy initialized data from flash to RAM
+let src = _sidata as *const u8;
+let dst = _sdata as *mut u8; 
+let len = _edata as usize - _sdata as usize;
+
+// Zero out uninitialized data
+let start = _sbss as *mut u8;
+let len = _ebss as usize - _sbss as usize;
+```
+
+**💡 Why This Matters**
+Without this precise memory organization:
+- ❌ Vector table in wrong place = processor won't boot
+- ❌ No data copying = initialized variables have garbage values  
+- ❌ No BSS zeroing = "zero" variables contain random data
+- ❌ Wrong stack location = immediate crashes
+
+The linker script transforms your Rust code into a **memory map** that the nRF52833 hardware can actually execute!
+
 ### 4. **Final Binary**
 The linker produces an ELF file with:
 - **Vector table at 0x00000000** (hardware requirement)
@@ -138,21 +187,6 @@ The linker produces an ELF file with:
 | **Memory Init** | Automatic | Automatic | **Manual RAM setup** |
 | **Learning Value** | Board basics | Register access | **Complete system** |
 
-## The Learning Journey
-
-This example represents the complete journey from high-level to bare metal:
-
-1. **Example 01**: "I want to blink an LED" → Use convenient HAL crates
-2. **Example 02**: "How do registers work?" → Direct hardware access with minimal deps  
-3. **Example 03**: "How does it ALL work?" → **Implement the entire embedded system**
-
-## Files Created
-
-- **`src/main.rs`** - Application code, vector table, reset handler, panic handler
-- **`link.x`** - Custom linker script defining memory sections
-- **`memory.x`** - nRF52833 memory layout (512K flash, 128K RAM)
-- **`Cargo.toml`** - Zero dependencies! 
-
 ## Technical Deep Dive
 
 ### Memory Initialization Process
@@ -163,12 +197,104 @@ This example represents the complete journey from high-level to bare metal:
    - Zeros `.bss` section (uninitialized globals)
    - Calls `main()` - your application starts!
 
-### Assembly Output
-The generated assembly is nearly identical to Example 02, proving our zero-dependency implementation maintains the same efficiency while giving complete control.
-
 ## Running this example
 
 ```bash
 cd example_03_hello_world_no_dependencies
 cargo run
 ```
+
+## 🔨 The Complete Compile Process
+
+Understanding how your zero-dependency Rust code becomes a working embedded binary:
+
+### **Step 1: Rust Compilation (`rustc`)**
+```bash
+rustc --target thumbv7em-none-eabihf src/main.rs
+```
+**What happens:**
+- 🦀 **Rust compiler** translates your Rust code into LLVM IR (Intermediate Representation)
+- 🎯 **Target triple** `thumbv7em-none-eabihf` specifies:
+  - `thumbv7em`: ARM Cortex-M4F instruction set (Thumb-2 + DSP + FPU)
+  - `none`: No operating system (bare metal)
+  - `eabihf`: ARM EABI with hardware floating point
+- 📝 **Attributes processed**:
+  - `#[no_std]`: Don't link standard library
+  - `#[no_main]`: Don't use standard main entry point
+  - `#[link_section = ".vector_table"]`: Place vector table in specific section
+  - `#[no_mangle]`: Keep function names for linker
+
+**Output**: Object file (`.o`) containing ARM machine code + metadata
+
+### **Step 2: Linking (`arm-none-eabi-ld`)**
+```bash
+arm-none-eabi-ld -T link.x -o target/main.elf main.o
+```
+**What happens:**
+- 🔗 **Linker** combines your object files using your custom `link.x` script
+- 📍 **Memory layout** applied from `memory.x`:
+  ```
+  FLASH: 0x00000000 - 0x0007FFFF (512KB)
+  RAM:   0x20000000 - 0x2001FFFF (128KB)
+  ```
+- 📋 **Sections organized**:
+  - `.vector_table` → `0x00000000` (ARM requirement)
+  - `.text` → Flash memory (your code)
+  - `.data` → RAM with flash backup (initialized variables)
+  - `.bss` → RAM only (uninitialized variables)
+- 🏷️ **Symbols created**:
+  - `_sdata`, `_edata`, `_sidata` (for data copying)
+  - `_sbss`, `_ebss` (for BSS zeroing)
+  - `_stack_start` (stack pointer initialization)
+
+**Output**: ELF executable with proper ARM Cortex-M memory layout
+
+### **Step 3: Binary Generation (`objcopy`)**
+```bash
+arm-none-eabi-objcopy -O binary target/main.elf target/main.bin
+```
+**What happens:**
+- 🗂️ **Strip ELF metadata**: Remove debug info, symbol tables, section headers
+- 💾 **Create flash image**: Pure binary data ready for microcontroller flash
+- 📏 **Memory map preserved**: Vector table first, then code, then data
+
+**Output**: Raw binary file that can be flashed directly to nRF52833
+
+### **Step 4: Hardware Flashing (`probe-rs`/`openocd`)**
+```bash
+probe-rs run --chip nRF52833_xxAA target/main.elf
+```
+**What happens:**
+- 🔌 **Debug probe** (like J-Link) connects to nRF52833 via SWD interface
+- 🧹 **Flash erase**: Clear existing program in flash memory
+- 📝 **Flash programming**: Write your binary to flash starting at `0x00000000`
+- ✅ **Verification**: Read back and verify flash contents match your binary
+
+**Result**: Your program is now stored in the nRF52833's flash memory!
+
+### **Step 5: Hardware Execution**
+**Power-on sequence:**
+1. 🔋 **Reset**: nRF52833 powers up, CPU starts at address `0x00000000`
+2. 📋 **Vector table read**: CPU reads stack pointer (`0x20020000`) and reset handler address
+3. 🏃‍♂️ **Reset handler**: Your `Reset()` function executes:
+   ```rust
+   // Copy .data from flash to RAM
+   copy_data_section();
+   // Zero .bss section in RAM  
+   zero_bss_section();
+   // Jump to your application
+   main();
+   ```
+4. 💡 **Your code runs**: LED starts blinking!
+
+### **Key Files in the Process**
+
+| File | Purpose | Created By |
+|------|---------|------------|
+| `src/main.rs` | Your Rust source code | You |
+| `memory.x` | Memory layout definition | You |
+| `link.x` | Linker script | You |
+| `Cargo.toml` | Build configuration | You |
+| `main.o` | Compiled object file | `rustc` |
+| `main.elf` | Linked executable | Linker |
+| `main.bin` | Flash-ready binary | `objcopy` |
