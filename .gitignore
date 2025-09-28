@@ -30,8 +30,7 @@ core
 *.core
 *.dump
 
-# Documentation build
-/doc/
+# Documentation build (but allow static docs like PDFs)
 /docs/book/
 
 # Temporary files
