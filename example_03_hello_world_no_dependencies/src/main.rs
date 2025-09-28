@@ -1,7 +1,6 @@
 #![no_main]
 #![no_std]
 
-use cortex_m::asm;
 use cortex_m_rt::entry;
 use panic_halt as _;
 
@@ -34,8 +33,10 @@ fn main() -> ! {
         }
 
         // Delay ~1s (on time)
-        for _ in 0..800_000 {
-            asm::nop();
+        for _ in 0..400_00 {
+            unsafe {
+                core::arch::asm!("nop");
+            }
         }
 
         unsafe {
@@ -44,8 +45,10 @@ fn main() -> ! {
         }
 
         // Delay ~1s (off time)
-        for _ in 0..800_000 {
-            asm::nop();
+        for _ in 0..800_00 {
+            unsafe {
+                core::arch::asm!("nop");
+            }
         }
     }
 }
