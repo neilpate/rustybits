@@ -1,30 +1,23 @@
 [package]
-name = "example_02_hello_world_minimal_dependencies"
+name = "example_02_minimal"
 authors = ["Neil Pate"]
 edition = "2021"
 version = "0.1.0"
 
 # ============================================================================
-# DEPENDENCIES - Full HAL for convenient embedded development
+# DEPENDENCIES - Minimal: just panic handling and runtime
 # ============================================================================
 
 [dependencies]
-cortex-m-rt = "0.7.5"      # Core embedded runtime - provides entry point and memory layout
-embedded-hal = "1.0.0"     # Hardware abstraction layer traits (GPIO, timers, etc.)
-microbit-v2 = "0.15.1"     # Board support package for micro:bit v2
-nrf52833-hal = "0.18.0"    # Hardware abstraction layer for nRF52833 chip
-panic-halt = "1.0.0"       # Panic handler for no_std environment
-
-# ARM Cortex-M core functionality
-[dependencies.cortex-m]
-version = "0.7.7"
-features = ["inline-asm"] # Enable inline assembly support
+panic-halt = "1.0.0" # Panic handler for no_std environment
+cortex-m-rt = "0.7.0" # Cortex-M runtime (provides reset handler and linker script)
+cortex-m = "0.7.0" # Cortex-M core functionality
 
 # ============================================================================
 # TARGET CONFIGURATION
 # ============================================================================
 
-# Configure probe-rs as the runner for flashing to micro:bit v2
+# Configure probe-rs as the runner for flashing
 [target.thumbv7em-none-eabihf]
 runner = "probe-rs run --chip nRF52833_xxAA"
 
@@ -33,7 +26,7 @@ runner = "probe-rs run --chip nRF52833_xxAA"
 # ============================================================================
 
 [[bin]]
-name = "example_02_hello_world_minimal_dependencies"
-path = "src/main.rs" 
-test = false    # Required: no_std doesn't support test framework
-bench = false   # Required: no_std doesn't support bench framework
+name = "main"
+path = "src/main.rs"
+test = false         # Required: no_std doesn't support test framework
+bench = false        # Required: no_std doesn't support bench framework
