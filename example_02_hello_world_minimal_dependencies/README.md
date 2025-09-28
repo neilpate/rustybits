@@ -120,44 +120,29 @@ During the build process, `cortex-m-rt` automatically finds and processes this f
 2. **Linker Script Generation**: It generates a complete `link.x` linker script that includes your memory layout
 3. **Section Placement**: The generated script places code and data sections according to your memory map:
 
-```linker-script
-/* Generated sections (simplified) */
-SECTIONS
-{
-  .vector_table ORIGIN(FLASH) : {
-    /* ARM Cortex-M vector table at start of flash */
-    LONG(_stack_start);           /* Initial stack pointer: 0x20020000 */
-    LONG(_reset_handler);         /* Reset handler address */
-    /* ... other exception vectors ... */
-  } > FLASH
+```
+nRF52833 Memory Layout (after linking):
 
-  .text : {
-    /* Your compiled code goes here */
-    *(.text .text.*);
-  } > FLASH
+FLASH (512K)                    RAM (128K)
+0x00000000                      0x20000000
+┌─────────────────────┐         ┌─────────────────────┐
+│ Vector Table        │         │                     │
+│ ├─ Stack Pointer    │         │                     │
+│ ├─ Reset Handler    │         │      Stack          │
+│ └─ Exception Vec... │         │        ↓            │
+├─────────────────────┤         │                     │
+│ .text (Your Code)   │         ├─────────────────────┤
+│ ├─ main()           │         │ .data (Init Vars)   │
+│ ├─ functions        │         │ ├─ global vars      │
+│ └─ compiled code    │         │ └─ static vars      │
+├─────────────────────┤         ├─────────────────────┤
+│ .rodata (Constants) │         │ .bss (Zero Vars)    │
+│ ├─ string literals  │         │ ├─ uninit globals   │
+│ └─ const arrays     │         │ └─ zeroed memory    │
+└─────────────────────┘         └─────────────────────┘
+0x0007FFFF                      0x2001FFFF
 
-  .rodata : {
-    /* Read-only data (string literals, const arrays) */
-    *(.rodata .rodata.*);
-  } > FLASH
-
-  .data : AT(LOADADDR(.rodata) + SIZEOF(.rodata)) {
-    /* Initialized global/static variables */
-    _sdata = .;                   /* Start of data section in RAM */
-    *(.data .data.*);
-    _edata = .;                   /* End of data section in RAM */
-  } > RAM
-
-  .bss : {
-    /* Uninitialized global/static variables (zeroed at startup) */
-    _sbss = .;                    /* Start of BSS section */
-    *(.bss .bss.*);
-    _ebss = .;                    /* End of BSS section */
-  } > RAM
-}
-
-/* Stack grows down from end of RAM */
-_stack_start = ORIGIN(RAM) + LENGTH(RAM);  /* 0x20020000 */
+Flash: Non-volatile storage      RAM: Fast volatile memory
 ```
 
 ### Build Process Details
