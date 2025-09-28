@@ -25,6 +25,22 @@ cargo run
 2. Click the ▶️ **Run** button above the `#[entry]` function
 3. Or use `Ctrl+Shift+P` → "Tasks: Run Task" → "Run Example 01"
 
+> **💡 VS Code Tip**: When viewing the source code, you'll see a small ▶️ "Run" arrow above the `#[entry]` function. This is provided by rust-analyzer and lets you run the example with a single click!
+
+<img width="1660" height="773" alt="VS Code Run button in source code" src="https://github.com/user-attachments/assets/744fbe24-fdd4-4cfb-af37-8be0536d5d28" />
+
+#### Debugging in VS Code
+
+You can also debug this example directly on the micro:bit hardware. Start the session using the preconfigured launch command (or just press F5).
+
+<img width="2257" height="1084" alt="VS Code debugging session" src="https://github.com/user-attachments/assets/84128dfc-99a1-4703-adae-b770a1a1c9fa" />
+
+This command is set up to halt the CPU on load. You can resume as usual by pressing the run arrow at the top.
+
+If you don't like this behaviour you can disable this automatic halting. Then use breakpoints as usual to pause execution.
+
+<img width="1633" height="800" alt="VS Code breakpoint debugging" src="https://github.com/user-attachments/assets/25fded61-5eb7-4921-a8c8-90032c17cc9f" />
+
 ### What Happens
 - **Builds** the project for ARM Cortex-M4 (`thumbv7em-none-eabihf` target)
 - **Flashes** the binary to your micro:bit via probe-rs

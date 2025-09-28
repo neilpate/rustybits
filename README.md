@@ -6,6 +6,11 @@ A collection of embedded Rust programming examples for the BBC micro:bit v2. Thi
 
 This project is based on examples from [The Embedded Rust Book](https://docs.rust-embedded.org/book/), which provides comprehensive guidance for embedded Rust development.
 
+## Documentation
+
+- 📋 **[VSCODE_SETUP.md](VSCODE_SETUP.md)** - Complete VS Code configuration guide for embedded Rust development
+- 🔍 **[DEEP_DIVE.md](DEEP_DIVE.md)** - Technical deep dive into the Rust-to-hardware compilation pipeline
+
 ## Examples
 
 ### [Example 01: Hello World](example_01_hello_world/)
@@ -13,21 +18,6 @@ This project is based on examples from [The Embedded Rust Book](https://docs.rus
 - Board initialization and GPIO configuration  
 - Hardware timer usage for delays
 - Simple LED matrix control
-
-**Run with:** `cargo run --bin example_01_hello_world`
-This will perform a build of the code, and flash it.
-
-> **💡 VS Code Tip**: When viewing the source code, you'll see a small ▶️ "Run" arrow above the `#[entry]` function. This is provided by rust-analyzer and lets you run the example with a single click!
-<img width="1660" height="773" alt="image" src="https://github.com/user-attachments/assets/744fbe24-fdd4-4cfb-af37-8be0536d5d28" />
-
-It is possible to do on target debugging. Start the session using the preconfigured launch command (or just press F5).
-
-<img width="2257" height="1084" alt="image" src="https://github.com/user-attachments/assets/84128dfc-99a1-4703-adae-b770a1a1c9fa" />
-
-This command is set up to halt the CPU on load. You can resume as usual by pressing the run arrow at the top.
-
-If you don't like this behaviour you can disable this automatic halting. Then use breakpoints as usual to pause execution.
-<img width="1633" height="800" alt="image" src="https://github.com/user-attachments/assets/25fded61-5eb7-4921-a8c8-90032c17cc9f" />
 
 
 
@@ -137,7 +127,6 @@ The project uses auto-generated memory layout from the `microbit-v2` crate, whic
 
 ## Learning Resources
 
-- **[DEEP_DIVE.md](DEEP_DIVE.md)** - Detailed explanation of the compilation, linking, and flashing process from Rust source to running micro:bit code
 - [Embedded Rust Book](https://docs.rust-embedded.org/book/)
 - [micro:bit v2 Documentation](https://tech.microbit.org/hardware/)
 - [nRF52833 Product Specification](https://infocenter.nordicsemi.com/topic/ps_nrf52833/keyfeatures_html5.html)
