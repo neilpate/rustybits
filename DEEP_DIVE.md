@@ -109,9 +109,7 @@ Tasks define how VS Code executes build and run operations:
             "type": "shell",
             "command": "cargo",
             "args": [
-                "build",
-                "--target",
-                "thumbv7em-none-eabihf"
+                "build"
             ],
             "options": {
                 "cwd": "${workspaceFolder}/example_01_hello_world"
@@ -121,22 +119,28 @@ Tasks define how VS Code executes build and run operations:
                 "reveal": "always",
                 "panel": "new"
             },
-            "problemMatcher": ["$rustc"]
+            "problemMatcher": [
+                "$rustc"
+            ]
         },
         {
-            "label": "rust: cargo build",
+            "label": "Run Example 01",
             "type": "shell",
             "command": "cargo",
             "args": [
-                "build",
-                "--target",
-                "thumbv7em-none-eabihf"
+                "run"
             ],
             "options": {
                 "cwd": "${workspaceFolder}/example_01_hello_world"
             },
             "group": "build",
-            "problemMatcher": ["$rustc"]
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": [
+                "$rustc"
+            ]
         }
     ]
 }
@@ -145,15 +149,14 @@ Tasks define how VS Code executes build and run operations:
 #### Key Task Properties:
 - **`label`**: Name displayed in VS Code's task menu and referenced by other configurations
 - **`type: "shell"`**: Executes commands in the system shell
-- **`command` & `args`**: The actual command to run (equivalent to `cargo build --target thumbv7em-none-eabihf`)
-- **`options.cwd`**: Working directory - crucial for finding local `.cargo/config.toml`
+- **`command` & `args`**: The actual command to run (equivalent to `cargo build` and `cargo run`)
+- **`options.cwd`**: Working directory - crucial for finding local `.cargo/config.toml` which specifies the target
 - **`group: "build"`**: Groups related tasks together
 - **`problemMatcher: ["$rustc"]`**: Parses Rust compiler output to show errors in VS Code's Problems panel
 - **`presentation`**: Controls how the terminal output is displayed
 
-#### Special Task Labels:
-- **`"rust: cargo build"`** and **`"rust: cargo run"`**: Override rust-analyzer's built-in tasks
-- This ensures that when you click the ▶️ Run button, it uses our configuration instead of the default
+#### Target Configuration:
+Notice that the tasks don't explicitly specify `--target thumbv7em-none-eabihf`. This is because the target is configured in each example's `.cargo/config.toml` file, making the tasks simpler and ensuring consistency.
 
 ### Launch Configuration (`.vscode/launch.json`)
 
