@@ -60,17 +60,6 @@ Each example builds the same functionality (blinking LED) but reveals progressiv
 
 > **💡 Note**: Each example directory contains its own readme.md with detailed explanations, code walkthrough, and specific instructions for that example.
 
-
-<!-- Future examples will be added here -->
-<!-- ### Example 02: Button Input
-**Reading button presses** - Handling user input
-- GPIO input configuration
-- Interrupt handling
-- Button debouncing
-
-**Run with:** `cargo run --bin example_02_buttons`
--->
-
 ## Quick Start
 
 ### Hardware Requirements

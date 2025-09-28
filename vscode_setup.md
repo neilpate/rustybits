@@ -34,7 +34,7 @@ This seamlessly integrates the entire compilation → linking → flashing pipel
 
 #### To Start Debugging:
 1. **Open the Debug Panel**: Click the "Run and Debug" icon in the sidebar (or press `Ctrl+Shift+D`)
-2. **Select Configuration**: Choose "Debug Example 01" or "Debug Example 02" from the dropdown
+2. **Select Configuration**: Choose "Debug Example 01", "Debug Example 02", or "Debug Example 03" from the dropdown
 3. **Start Debugging**: Click the green play button or press `F5`
 
 #### What Happens During Debug:
@@ -158,6 +158,21 @@ Tasks define how VS Code executes build and run operations:
             "problemMatcher": [
                 "$rustc"
             ]
+        },
+        {
+            "label": "Build Example 03",
+            "type": "shell",
+            "command": "cargo",
+            "args": [
+                "build"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/example_03_hello_world_no_dependencies"
+            },
+            "group": "build",
+            "problemMatcher": [
+                "$rustc"
+            ]
         }
     ]
 }
@@ -215,6 +230,25 @@ Launch configurations define debugging sessions:
                 }
             ],
             "preLaunchTask": "Build Example 02"
+        },
+        {
+            "type": "probe-rs-debug",
+            "request": "launch",
+            "name": "Debug Example 03",
+            "cwd": "${workspaceFolder}/example_03_hello_world_no_dependencies",
+            "connectUnderReset": false,
+            "chip": "nRF52833_xxAA",
+            "flashingConfig": {
+                "flashingEnabled": true,
+                "haltAfterReset": false
+            },
+            "coreConfigs": [
+                {
+                    "coreIndex": 0,
+                    "programBinary": "target/thumbv7em-none-eabihf/debug/main"
+                }
+            ],
+            "preLaunchTask": "Build Example 03"
         }
     ]
 }

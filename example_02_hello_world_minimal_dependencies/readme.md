@@ -173,3 +173,7 @@ Flash: Non-volatile storage      RAM: Fast volatile memory
 3. Call your `main()` function
 
 This happens automatically before your code runs, setting up the memory environment your program expects.
+
+---
+
+> **🚀 Ready for the Final Challenge?** Check out [Example 03](../example_03_hello_world_no_dependencies/) which achieves **ZERO dependencies** by implementing everything from scratch - including the reset handler, vector table, and linker script! You'll see exactly how `cortex-m-rt` works by building it yourself. It's the ultimate deep dive into embedded systems architecture!
