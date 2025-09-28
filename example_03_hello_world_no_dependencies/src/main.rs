@@ -1,7 +1,91 @@
 #![no_main]
 #![no_std]
 
-use cortex_m_rt::entry;
+// ============================================================================
+// VECTOR TABLE & RESET HANDLER - Replacing cortex-m-rt
+// ============================================================================
+
+// External symbols from linker script
+extern "C" {
+    static mut _sbss: u32; // Start of .bss section
+    static mut _ebss: u32; // End of .bss section
+    static mut _sdata: u32; // Start of .data section in RAM
+    static mut _edata: u32; // End of .data section in RAM
+    static _sidata: u32; // Initial values for .data (in flash)
+    static _stack_start: u32; // Initial stack pointer
+}
+
+// Reset handler - this is where execution begins after power-on
+#[no_mangle]
+pub unsafe extern "C" fn Reset() -> ! {
+    // 1. Initialize RAM (.data and .bss sections)
+
+    // Copy .data section from flash to RAM
+    let mut src = core::ptr::addr_of!(_sidata);
+    let mut dest = core::ptr::addr_of_mut!(_sdata);
+    let end_data = core::ptr::addr_of_mut!(_edata);
+
+    while dest < end_data {
+        core::ptr::write_volatile(dest, core::ptr::read_volatile(src));
+        dest = dest.offset(1);
+        src = src.offset(1);
+    }
+
+    // Zero out .bss section
+    let mut dest = core::ptr::addr_of_mut!(_sbss);
+    let end_bss = core::ptr::addr_of_mut!(_ebss);
+
+    while dest < end_bss {
+        core::ptr::write_volatile(dest, 0);
+        dest = dest.offset(1);
+    }
+
+    // 2. Call our main function
+    main();
+}
+
+// Default handler for unused interrupts
+#[no_mangle]
+pub extern "C" fn DefaultHandler() -> ! {
+    loop {}
+}
+
+// ARM Cortex-M Vector Table - using function pointers
+// This MUST be placed at address 0x00000000 (start of flash)
+#[repr(C)]
+pub struct VectorTable {
+    pub stack_pointer: u32,
+    pub reset: unsafe extern "C" fn() -> !,
+    pub nmi: unsafe extern "C" fn() -> !,
+    pub hard_fault: unsafe extern "C" fn() -> !,
+    pub mem_manage: unsafe extern "C" fn() -> !,
+    pub bus_fault: unsafe extern "C" fn() -> !,
+    pub usage_fault: unsafe extern "C" fn() -> !,
+    pub reserved1: [u32; 4],
+    pub sv_call: unsafe extern "C" fn() -> !,
+    pub debug_monitor: unsafe extern "C" fn() -> !,
+    pub reserved2: u32,
+    pub pend_sv: unsafe extern "C" fn() -> !,
+    pub sys_tick: unsafe extern "C" fn() -> !,
+}
+
+#[link_section = ".vector_table"]
+#[no_mangle]
+pub static VECTOR_TABLE: VectorTable = VectorTable {
+    stack_pointer: 0x20020000, // End of 128K RAM
+    reset: Reset,
+    nmi: DefaultHandler,
+    hard_fault: DefaultHandler,
+    mem_manage: DefaultHandler,
+    bus_fault: DefaultHandler,
+    usage_fault: DefaultHandler,
+    reserved1: [0; 4],
+    sv_call: DefaultHandler,
+    debug_monitor: DefaultHandler,
+    reserved2: 0,
+    pend_sv: DefaultHandler,
+    sys_tick: DefaultHandler,
+};
 
 // Custom panic handler - replaces panic-halt crate
 #[panic_handler]
@@ -19,8 +103,8 @@ const GPIO_P0_PIN_CNF: *mut u32 = 0x5000_0700 as *mut u32;
 const ROW1_PIN: u32 = 21; // P0.21
 const COL1_PIN: u32 = 28; // P0.28
 
-#[entry]
-fn main() -> ! {
+#[no_mangle]
+pub extern "C" fn main() -> ! {
     unsafe {
         // Configure P0.21 (Row 1) as output
         let pin_cnf_21 = GPIO_P0_PIN_CNF.add(ROW1_PIN as usize);

@@ -10,8 +10,10 @@ version = "0.1.0"
 
 [dependencies]
 # panic-halt = "1.0.0" # REMOVED: Using custom panic handler instead
-cortex-m-rt = "0.7.0" # Cortex-M runtime (provides reset handler and linker script)
+# cortex-m-rt = "0.7.0" # REMOVED: Implementing everything ourselves!
 # cortex-m = "0.7.0" # REMOVED: Using inline assembly instead
+
+# 🎉 ZERO DEPENDENCIES! 🎉
 
 # ============================================================================
 # TARGET CONFIGURATION
