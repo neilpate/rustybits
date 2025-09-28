@@ -19,6 +19,7 @@ This project is based on examples from [The Embedded Rust Book](https://docs.rus
 - Hardware timer usage for delays
 - Simple LED matrix control
 
+> **💡 Note**: Each example directory contains its own README.md with detailed explanations, code walkthrough, and specific instructions for that example.
 
 
 <!-- Future examples will be added here -->
