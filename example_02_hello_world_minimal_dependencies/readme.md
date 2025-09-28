@@ -95,6 +95,46 @@ const ROW1_PIN: u32 = 21; // P0.21
 const COL1_PIN: u32 = 28; // P0.28
 ```
 
+### �️ Memory Mapping Basics
+
+The nRF52833 uses a **unified memory architecture** where everything looks like memory to your Rust code, but different addresses go to different physical hardware:
+
+```
+nRF52833 Memory Map:
+┌─────────────────┬─────────────────────┬─────────────────────┐
+│ Address Range   │ What Lives There    │ Your Code Example   │
+├─────────────────┼─────────────────────┼─────────────────────┤
+│ 0x0000_0000     │ Flash Memory        │ const MSG = "Hi!";  │
+│ to 0x0007_FFFF  │ (Program code,      │ (read-only)         │
+│ (512KB)         │  constants)         │                     │
+├─────────────────┼─────────────────────┼─────────────────────┤
+│ 0x2000_0000     │ SRAM Memory         │ let mut count = 0;  │
+│ to 0x2001_FFFF  │ (Variables, stack)  │ (read/write)        │
+│ (128KB)         │                     │                     │
+├─────────────────┼─────────────────────┼─────────────────────┤
+│ 0x5000_0508     │ GPIO OUTSET         │ Turn pins HIGH      │
+│ 0x5000_050C     │ GPIO OUTCLR         │ Turn pins LOW       │
+│ 0x5000_0700+    │ GPIO PIN_CNF        │ Configure pins      │
+└─────────────────┴─────────────────────┴─────────────────────┘
+```
+
+**Why This Works:**
+- **Same syntax**: `*0x5000_0508` and `*0x2000_1000` use identical Rust code
+- **Different hardware**: Address decoder routes to GPIO vs SRAM automatically  
+- **No special I/O**: Unlike x86, no separate `in`/`out` instructions needed
+
+**Memory-Mapped I/O Example:**
+```rust
+// All of these use the same Rust syntax but hit different hardware:
+unsafe {
+    let flash_data = core::ptr::read_volatile(0x0000_2000 as *const u32);    // Flash
+    let ram_data = core::ptr::read_volatile(0x2000_1000 as *const u32);      // SRAM  
+    core::ptr::write_volatile(0x5000_0508 as *mut u32, 1 << 21);            // GPIO
+}
+```
+
+> **� Want the Full Hardware Story?** See [hardware.md](../hardware.md) for complete details on address buses, SRAM cells, flash programming, and how your Rust code becomes photons from the LED!
+
 ## Memory Layout and Build Process
 
 ### The `memory.x` File

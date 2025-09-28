@@ -10,7 +10,8 @@ This project is based on examples from [The Embedded Rust Book](https://docs.rus
 
 - 📋 **[vscode_setup.md](vscode_setup.md)** - Complete VS Code configuration guide for embedded Rust development
 - 🔍 **[deep_dive.md](deep_dive.md)** - Technical deep dive into the Rust-to-hardware compilation pipeline
-- 📄 **[micro:bit v2 Schematic](doc/MicroBit_V2.2.1_nRF52820%20schematic.PDF)** - Official hardware schematic (PDF)
+- � **[hardware.md](hardware.md)** - How memory mapping physically works: address bus, Flash, RAM, and peripherals
+- �📄 **[micro:bit v2 Schematic](doc/MicroBit_V2.2.1_nRF52820%20schematic.PDF)** - Official hardware schematic (PDF)
 
 ## Examples
 
