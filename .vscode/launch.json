@@ -7,8 +7,8 @@
         {
             "type": "probe-rs-debug",
             "request": "launch",
-            "name": "Debug (probe-rs)",
-            "cwd": "${fileDirname}/..",
+            "name": "Debug Example 01",
+            "cwd": "${workspaceFolder}/example_01_hello_world",
             "connectUnderReset": false,
             "chip": "nRF52833_xxAA",
             "flashingConfig": {
@@ -18,21 +18,29 @@
             "coreConfigs": [
                 {
                     "coreIndex": 0,
-                    "programBinary": "target/thumbv7em-none-eabihf/debug/${input:exampleName}"
+                    "programBinary": "target/thumbv7em-none-eabihf/debug/example_01_hello_world"
                 }
-            ]
-        }
-    ],
-    "inputs": [
-        {
-            "id": "exampleName",
-            "type": "pickString",
-            "description": "Which example to debug?",
-            "options": [
-                "example_01_hello_world",
-                "example_02_hello_world_minimal_dependencies"
             ],
-            "default": "example_01_hello_world"
+            "preLaunchTask": "Build Example 01"
+        },
+        {
+            "type": "probe-rs-debug",
+            "request": "launch",
+            "name": "Debug Example 02",
+            "cwd": "${workspaceFolder}/example_02_hello_world_minimal_dependencies",
+            "connectUnderReset": false,
+            "chip": "nRF52833_xxAA",
+            "flashingConfig": {
+                "flashingEnabled": true,
+                "haltAfterReset": false
+            },
+            "coreConfigs": [
+                {
+                    "coreIndex": 0,
+                    "programBinary": "target/thumbv7em-none-eabihf/debug/example_02_hello_world_minimal_dependencies"
+                }
+            ],
+            "preLaunchTask": "Build Example 02"
         }
     ]
 }

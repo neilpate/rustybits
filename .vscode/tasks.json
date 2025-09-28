@@ -38,6 +38,36 @@
             "problemMatcher": [
                 "$rustc"
             ]
+        },
+        {
+            "label": "Build Example 01",
+            "type": "shell",
+            "command": "cargo",
+            "args": [
+                "build"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/example_01_hello_world"
+            },
+            "group": "build",
+            "problemMatcher": [
+                "$rustc"
+            ]
+        },
+        {
+            "label": "Build Example 02",
+            "type": "shell",
+            "command": "cargo",
+            "args": [
+                "build"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/example_02_hello_world_minimal_dependencies"
+            },
+            "group": "build",
+            "problemMatcher": [
+                "$rustc"
+            ]
         }
     ]
 }
