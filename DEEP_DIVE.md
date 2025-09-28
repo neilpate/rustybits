@@ -33,7 +33,42 @@ rustflags = ["-C", "linker=rust-lld", "-C", "link-arg=-Tlink.x"]
   - **`-C linker=rust-lld`**: Use LLVM's linker (works better for embedded)
   - **`-C link-arg=-Tlink.x`**: Use cortex-m-rt's linker script
 
-## Overview
+### Target Architecture Explained
+```toml
+# .cargo/config.toml
+target = "thumbv7em-none-eabihf"
+```
+
+**Target Breakdown:**
+- **`thumbv7em`**: ARM Cortex-M4F architecture with DSP extensions
+- **`none`**: No operating system (bare metal)
+- **`eabihf`**: Embedded Application Binary Interface with Hardware Float
+
+This tells Rust to generate ARM assembly code specifically for the nRF52833's Cortex-M4F processor.
+
+### Probe-rs Configuration (`Embed.toml`)
+
+```toml
+[default.general]
+chip = "nrf52833_xxAA"
+
+[default.reset]
+halt_afterwards = false
+
+[default.rtt]
+enabled = false
+
+[default.gdb]
+enabled = false
+```
+
+**Probe-rs Configuration:**
+- **`chip`**: Specifies the exact chip variant (nRF52833 with 512KB flash)
+- **`halt_afterwards`**: Allows the program to run immediately after flashing
+- **`rtt`**: Real-Time Transfer debugging disabled (not needed for simple examples)
+- **`gdb`**: GDB debugging interface disabled (not needed for simple examples)
+
+## The Compilation Pipeline
 
 The journey from Rust source to running embedded code involves several critical steps:
 
@@ -42,12 +77,7 @@ The journey from Rust source to running embedded code involves several critical 
 3. **Binary generation** in ELF format
 4. **Flashing** to the nRF52833 microcontroller via probe-rs
 
-## Step 1: Cross-Compilation
-
-### Target Architecture
-```toml
-# .cargo/config.toml
-target = "thumbv7em-none-eabihf"
+### Step 1: Cross-Compilation
 ```
 
 This specifies:
@@ -302,3 +332,29 @@ panic = "abort"     # Smaller panic handler
 - **Flash**: Typically 4-20KB for simple examples
 - **RAM**: Static allocation preferred (no heap allocator)
 - **Stack**: Usually 2-8KB depending on recursion depth
+
+## The Embedded Rust Ecosystem
+
+These examples leverage the power of Rust's embedded ecosystem to hide much of the low-level complexity:
+
+### Hardware Abstraction Layers
+- **`microbit-v2` crate**: Provides a high-level board abstraction - you get simple functions like `board.display_pins.row1` instead of manually configuring GPIO registers
+- **`nrf52833-hal` crate**: Handles the Nordic chip specifics - timers, GPIO, and peripherals are wrapped in safe, easy-to-use APIs
+- **`cortex-m-rt` crate**: Takes care of the startup sequence, memory layout, and low-level ARM Cortex-M details
+
+### What's Hidden Away
+Behind the simple Rust code are hundreds of lines of:
+- **Register manipulation**: Direct hardware register reads/writes for GPIO, timers, clocks
+- **Memory layout configuration**: Linker scripts defining where code and data live in flash/RAM  
+- **Startup code**: Assembly routines that run before your `main()` function
+- **Interrupt vectors**: Hardware interrupt handling and vector tables
+- **Clock configuration**: Setting up the chip's various clock sources and frequencies
+
+### Memory Layout
+The project uses auto-generated memory layout from the `microbit-v2` crate, which provides:
+- Flash memory mapping for the nRF52833 (typically starts at 0x00000000)
+- RAM allocation compatible with the micro:bit v2 (typically starts at 0x20000000) 
+- Stack and heap configuration for the Cortex-M4 processor
+- Bootloader compatibility (leaves space for the micro:bit's built-in bootloader)
+
+This layered approach allows you to write high-level, safe Rust code while the ecosystem handles the embedded systems complexity underneath.

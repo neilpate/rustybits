@@ -90,73 +90,28 @@ fn main() -> ! {
 }
 ```
 
-## Key Concepts
+## How It Works
 
-### Embedded Rust Attributes
+This example demonstrates the basics of micro:bit LED control:
 
-- **`#![no_main]`** - Tells Rust not to use the standard `main()` function. In embedded systems, we need custom startup code and memory layout, so we bypass Rust's default runtime.
-- **`#![no_std]`** - Disables the standard library since it assumes an operating system with heap allocation, file systems, etc. We use only the core library which works in bare metal environments.
+1. **Board Initialization**: `microbit::Board::take().unwrap()` - Gets exclusive access to the micro:bit hardware
+2. **LED Setup**: Configures row 1 and column 1 of the LED matrix - an LED lights when its row is HIGH and column is LOW
+3. **Timer**: Uses the hardware timer for precise delays
+4. **Blink Loop**: Toggles the LED every 100ms to create a blinking effect
 
-### Import Breakdown
+### The micro:bit LED Matrix
+The micro:bit's 5x5 LED display works as a matrix - each LED is controlled by setting its row HIGH and column LOW. This example controls just one LED at position (1,1).
 
-- **`use cortex_m_rt::entry;`** - Provides the `#[entry]` macro for defining our custom entry point. This crate handles ARM Cortex-M startup code and vector tables.
-- **`use embedded_hal::{delay::DelayNs, digital::OutputPin};`** - Hardware Abstraction Layer (HAL) traits that define common embedded interfaces. `DelayNs` provides timing functions, `OutputPin` provides GPIO output operations.
-- **`use microbit::hal::{gpio, timer};`** - micro:bit specific implementations of GPIO pins and hardware timers, built on top of the nRF52833 chip drivers.
-- **`use panic_halt as _;`** - Panic handler for `no_std` environments. When a panic occurs, this handler simply halts execution (enters infinite loop) rather than unwinding the stack.
+## Key Files
 
-### Entry Point
+- **`src/main.rs`** - Your Rust code that blinks the LED
+- **`.cargo/config.toml`** - Build configuration (ARM target, probe-rs runner)  
+- **`Cargo.toml`** - Dependencies and project metadata
+- **`Embed.toml`** - probe-rs flashing configuration
 
-- **`#[entry]`** - This macro marks our `main()` function as the program entry point. It generates the necessary startup code, sets up the stack pointer, initializes RAM, and calls our function. The function signature `fn main() -> !` indicates it never returns (infinite loop).
+> **💡 Tip**: This example is completely self-contained. You can copy this entire directory and use it as a starting point for your own micro:bit projects!
 
-### Code Explanation
+## Want to Learn More?
 
-1. **Board Initialization**: `microbit::Board::take().unwrap()` - Singleton pattern that gives us exclusive access to the micro:bit's hardware peripherals. Can only be called once.
-
-2. **LED Matrix Setup**: The micro:bit's 5x5 LED display uses a matrix scanning approach:
-   - `row1.into_push_pull_output(gpio::Level::High)` - Configure row 1 as output, initially high
-   - `col1.into_push_pull_output(gpio::Level::Low)` - Configure column 1 as output, initially low
-   - An LED lights up when its row is HIGH and column is LOW
-
-3. **Hardware Timer**: `timer::Timer::new(board.TIMER0)` - Creates a blocking delay timer using the nRF52833's hardware timer peripheral. More accurate than software delays.
-
-4. **Main Loop**: Embedded systems typically run forever, so we use an infinite loop:
-   - `timer0.delay_ms(100)` - Precise 100ms delay using hardware timer
-   - `row1.set_high()/.set_low()` - Toggle the LED state to create blinking effect
-
-## Configuration Files
-
-### `.cargo/config.toml`
-```toml
-[build]
-target = "thumbv7em-none-eabihf"  # ARM Cortex-M4 with hardware floating point
-
-[target.thumbv7em-none-eabihf]
-runner = "probe-rs run --chip nRF52833_xxAA"  # Flash and run on micro:bit
-rustflags = ["-C", "linker=rust-lld", "-C", "link-arg=-Tlink.x"]
-```
-
-### `Embed.toml`
-```toml
-[default.general]
-chip = "nrf52833_xxAA"    # micro:bit v2 chip
-
-[default.reset]
-halt_afterwards = false   # Continue running after flash
-
-[default.rtt]
-enabled = false          # Real-Time Transfer (for debugging output)
-
-[default.gdb]
-enabled = false          # GDB debugging interface
-```
-
-## Dependencies
-
-This example uses several key embedded Rust crates:
-
-- **`microbit-v2 = "0.13.0"`** - Board Support Package for micro:bit v2
-- **`cortex-m-rt = "0.7.3"`** - Runtime and startup code for ARM Cortex-M
-- **`embedded-hal = "0.2.7"`** - Hardware Abstraction Layer traits
-- **`panic-halt = "0.2.0"`** - Simple panic handler for embedded systems
-
-The `microbit-v2` crate provides high-level access to micro:bit hardware while the other crates provide the embedded Rust foundation.
+- **[DEEP_DIVE.md](../DEEP_DIVE.md)** - Technical explanation of how Rust becomes running hardware code
+- **[VSCODE_SETUP.md](../VSCODE_SETUP.md)** - Complete VS Code configuration guide
