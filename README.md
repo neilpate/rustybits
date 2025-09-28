@@ -42,6 +42,15 @@ This project is based on examples from [The Embedded Rust Book](https://docs.rus
 ### Software Installation
 Follow the installation guide from [The Embedded Rust Book - Installation](https://docs.rust-embedded.org/book/intro/install.html) for complete setup instructions.
 
+### VS Code Extensions
+Required extensions for the best development experience:
+
+1. **rust-analyzer** (`rust-lang.rust-analyzer`)
+   - Provides Rust language support and Code Lens features
+
+2. **probe-rs-debugger** (`probe-rs.probe-rs-debugger`)  
+   - Required for embedded debugging support
+
 ### Running Examples
 Each example is a complete, independent Rust project:
 
