@@ -2,60 +2,20 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Build Example 01",
-            "type": "shell",
-            "command": "cargo",
-            "args": [
-                "build",
-                "--target",
-                "thumbv7em-none-eabihf"
-            ],
-            "options": {
-                "cwd": "${workspaceFolder}/example_01_hello_world"
-            },
-            "group": "build",
-            "presentation": {
-                "reveal": "always",
-                "panel": "new"
-            },
-            "problemMatcher": [
-                "$rustc"
-            ]
-        },
-        {
-            "label": "Run Example 01",
-            "type": "shell",
-            "command": "cargo",
-            "args": [
-                "run",
-                "--target",
-                "thumbv7em-none-eabihf"
-            ],
-            "options": {
-                "cwd": "${workspaceFolder}/example_01_hello_world"
-            },
-            "group": "build",
-            "presentation": {
-                "reveal": "always",
-                "panel": "new"
-            },
-            "problemMatcher": [
-                "$rustc"
-            ]
-        },
-        {
             "label": "rust: cargo build",
             "type": "shell",
             "command": "cargo",
             "args": [
-                "build",
-                "--target",
-                "thumbv7em-none-eabihf"
+                "build"
             ],
             "options": {
-                "cwd": "${workspaceFolder}/example_01_hello_world"
+                "cwd": "${fileDirname}/.."
             },
             "group": "build",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
             "problemMatcher": [
                 "$rustc"
             ]
@@ -65,14 +25,16 @@
             "type": "shell",
             "command": "cargo",
             "args": [
-                "run",
-                "--target",
-                "thumbv7em-none-eabihf"
+                "run"
             ],
             "options": {
-                "cwd": "${workspaceFolder}/example_01_hello_world"
+                "cwd": "${fileDirname}/.."
             },
             "group": "build",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
             "problemMatcher": [
                 "$rustc"
             ]

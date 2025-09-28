@@ -7,8 +7,8 @@
         {
             "type": "probe-rs-debug",
             "request": "launch",
-            "name": "Debug Example 01",
-            "cwd": "${workspaceFolder}/example_01_hello_world",
+            "name": "Debug (probe-rs)",
+            "cwd": "${fileDirname}/..",
             "connectUnderReset": false,
             "chip": "nRF52833_xxAA",
             "flashingConfig": {
@@ -18,29 +18,21 @@
             "coreConfigs": [
                 {
                     "coreIndex": 0,
-                    "programBinary": "../target/thumbv7em-none-eabihf/debug/example_01_hello_world"
+                    "programBinary": "target/thumbv7em-none-eabihf/debug/${input:exampleName}"
                 }
-            ],
-            "preLaunchTask": "rust: cargo build"
-        },
+            ]
+        }
+    ],
+    "inputs": [
         {
-            "type": "probe-rs-debug",
-            "request": "launch",
-            "name": "Debug Example 02",
-            "cwd": "${workspaceFolder}/example_02_hello_world_minimal_dependencies",
-            "connectUnderReset": false,
-            "chip": "nRF52833_xxAA",
-            "flashingConfig": {
-                "flashingEnabled": true,
-                "haltAfterReset": false
-            },
-            "coreConfigs": [
-                {
-                    "coreIndex": 0,
-                    "programBinary": "../target/thumbv7em-none-eabihf/debug/example_02_hello_world_minimal_dependencies"
-                }
+            "id": "exampleName",
+            "type": "pickString",
+            "description": "Which example to debug?",
+            "options": [
+                "example_01_hello_world",
+                "example_02_hello_world_minimal_dependencies"
             ],
-            "preLaunchTask": "rust: cargo build"
+            "default": "example_01_hello_world"
         }
     ]
 }
