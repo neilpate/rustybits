@@ -285,14 +285,8 @@ Target Memory Bus - CPU's internal buses
 - **Watchpoints**: Monitor memory locations for read/write access
 - **Real-time Trace**: Extract execution trace data (if supported by target)
 
-#### SWD vs JTAG Comparison
-| Feature | SWD | JTAG |
-|---------|-----|------|
-| Pins | 2 (+ power/ground) | 4 (+ power/ground) |
-| Speed | Up to 50MHz | Up to 25MHz typical |
-| Complexity | Simpler protocol | More complex state machine |
-| ARM Support | Native ARM protocol | Generic standard |
-| Trace | Supports SWO trace | Supports ETM trace |
+#### SWD vs JTAG
+SWD is ARM's more efficient alternative to JTAG, using only 2 pins instead of 4 and offering higher speeds with a simpler protocol specifically designed for ARM Cortex-M processors.
 
 #### Security and SWD
 Modern ARM processors (including nRF52833) support:
