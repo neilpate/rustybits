@@ -25,7 +25,7 @@ cargo run
 2. Click the ▶️ **Run** button above the `#[entry]` function
 3. Or use `Ctrl+Shift+P` → "Tasks: Run Task" → "Run Example 01"
 
-> **💡 For detailed VS Code setup and visual guides, see [VSCODE_SETUP.md](../VSCODE_SETUP.md)**
+> **💡 For detailed VS Code setup and visual guides, see [vscode_setup.md](../vscode_setup.md)**
 
 ### What Happens
 - **Builds** the project for ARM Cortex-M4 (`thumbv7em-none-eabihf` target)
@@ -171,5 +171,5 @@ The crates do enormous work during compilation to transform your Rust code into 
 
 ## Want to Learn More?
 
-- **[DEEP_DIVE.md](../DEEP_DIVE.md)** - Technical explanation of how Rust becomes running hardware code
-- **[VSCODE_SETUP.md](../VSCODE_SETUP.md)** - Complete VS Code configuration guide
+- **[deep_dive.md](../deep_dive.md)** - Technical explanation of how Rust becomes running hardware code
+- **[vscode_setup.md](../vscode_setup.md)** - Complete VS Code configuration guide

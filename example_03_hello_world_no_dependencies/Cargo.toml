@@ -1,0 +1,32 @@
+[package]
+name = "example_03_no_dependencies"
+authors = ["Neil Pate"]
+edition = "2021"
+version = "0.1.0"
+
+# ============================================================================
+# DEPENDENCIES - Minimal: just panic handling and runtime
+# ============================================================================
+
+[dependencies]
+panic-halt = "1.0.0" # Panic handler for no_std environment
+cortex-m-rt = "0.7.0" # Cortex-M runtime (provides reset handler and linker script)
+cortex-m = "0.7.0" # Cortex-M core functionality
+
+# ============================================================================
+# TARGET CONFIGURATION
+# ============================================================================
+
+# Configure probe-rs as the runner for flashing
+[target.thumbv7em-none-eabihf]
+runner = "probe-rs run --chip nRF52833_xxAA"
+
+# ============================================================================
+# BINARY CONFIGURATION
+# ============================================================================
+
+[[bin]]
+name = "main"
+path = "src/main.rs"
+test = false         # Required: no_std doesn't support test framework
+bench = false        # Required: no_std doesn't support bench framework

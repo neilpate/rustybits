@@ -8,8 +8,8 @@ This project is based on examples from [The Embedded Rust Book](https://docs.rus
 
 ## Documentation
 
-- 📋 **[VSCODE_SETUP.md](VSCODE_SETUP.md)** - Complete VS Code configuration guide for embedded Rust development
-- 🔍 **[DEEP_DIVE.md](DEEP_DIVE.md)** - Technical deep dive into the Rust-to-hardware compilation pipeline
+- 📋 **[vscode_setup.md](vscode_setup.md)** - Complete VS Code configuration guide for embedded Rust development
+- 🔍 **[deep_dive.md](deep_dive.md)** - Technical deep dive into the Rust-to-hardware compilation pipeline
 - 📄 **[micro:bit v2 Schematic](doc/MicroBit_V2.2.1_nRF52820%20schematic.PDF)** - Official hardware schematic (PDF)
 
 ## Examples
@@ -20,7 +20,7 @@ This project is based on examples from [The Embedded Rust Book](https://docs.rus
 - Hardware timer usage for delays
 - Simple LED matrix control
 
-> **💡 Note**: Each example directory contains its own README.md with detailed explanations, code walkthrough, and specific instructions for that example.
+> **💡 Note**: Each example directory contains its own readme.md with detailed explanations, code walkthrough, and specific instructions for that example.
 
 
 <!-- Future examples will be added here -->
@@ -66,7 +66,7 @@ cd example_01_hello_world
 cargo run
 ```
 
-> **💡 Tip**: See [VSCODE_SETUP.md](VSCODE_SETUP.md) for complete VS Code configuration and debugging setup.
+> **💡 Tip**: See [vscode_setup.md](vscode_setup.md) for complete VS Code configuration and debugging setup.
 
 ## Project Architecture
 
