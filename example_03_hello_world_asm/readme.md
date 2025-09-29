@@ -21,96 +21,92 @@ This implementation uses pure ARM Thumb assembly with direct hardware register a
 - **Linker script reduction**: `link.x` (69 lines) → `minimal.ld` (20 lines, 71% reduction)
 - **Memory layout**: Eliminated `memory.x` in favor of hardcoded address constants
 - **Configuration consolidation**: Removed `Embed.toml`, consolidated into `.cargo/config.toml`
-
-
-### **Build System Minimized:**
-- **4 essential files total** (vs typical 6-8+ files)
-- **20-line minimal linker script** (vs typical 100+ lines)
-- **Hardcoded build configuration** in `.cargo/config.toml`
+- **File count**: Reduced to 4 essential files (vs typical 6-8+ files)
+- **Build configuration**: Centralized in `.cargo/config.toml`
 
 ## Implementation Details
 
-### 1. **Pure Assembly Vector Table**
+### 1. **ARM Cortex-M Vector Table**
 ```assembly
 .section .vector_table, "a"
 vector_table:
-    .long 0x20020000            // HARDCODED stack pointer (end of 128KB RAM)
-    .long Reset + 1             // Reset Handler (Thumb bit set)
-    // Only 8 bytes total! No other interrupts/exceptions!
+    .long 0x20020000            // Initial stack pointer (end of 128KB RAM)
+    .long Reset + 1             // Reset handler address with Thumb bit set
+    // Minimal 8-byte implementation - unused handlers omitted
 ```
 
-### 2. **Pure Assembly Reset Handler**
+### 2. **Reset Handler Implementation**
 ```assembly
 Reset:
-    // Set up stack pointer explicitly 
-    ldr r0, =0x20020000        // Load hardcoded stack address
-    mov sp, r0                 // Set stack pointer
+    // Initialize stack pointer explicitly
+    ldr r0, =0x20020000        // Load stack pointer address
+    mov sp, r0                 // Set stack pointer register
     
-    bl main                    // Jump directly to main (YOLO - no memory init!)
+    bl main                    // Branch to main application function
     
 reset_loop:
-    b reset_loop               // Loop forever if main returns
+    b reset_loop               // Infinite loop if main returns
 ```
 
-### 3. **Pure Assembly Main Function**
+### 3. **Main Application Function**
 ```assembly
 main:
-    // GPIO register addresses - ALL HARDCODED!
-    .equ GPIO_P0_PIN_CNF_BASE, 0x50000700  // GPIO configuration base
-    .equ GPIO_P0_OUTSET,       0x50000508  // Set pins high
-    .equ GPIO_P0_OUTCLR,       0x5000050C  // Set pins low
+    // nRF52833 GPIO register addresses
+    .equ GPIO_P0_PIN_CNF_BASE, 0x50000700  // Pin configuration register base
+    .equ GPIO_P0_OUTSET,       0x50000508  // Output set register
+    .equ GPIO_P0_OUTCLR,       0x5000050C  // Output clear register
     
-    // Configure P0.21 (Row 1) as output
-    ldr r0, =(GPIO_P0_PIN_CNF_BASE + (21 * 4))  // PIN_CNF[21] = 0x50000754
-    movs r1, #1                 // DIR=1 (output)
-    str r1, [r0]               // Direct register write!
+    // Configure P0.21 as output for LED control
+    ldr r0, =(GPIO_P0_PIN_CNF_BASE + (21 * 4))  // Calculate PIN_CNF[21] address
+    movs r1, #1                 // Set DIR=1 (output mode)
+    str r1, [r0]               // Write configuration
     
-    // Blink loop with assembly timing
+    // LED blink loop with software timing
     blink_loop:
-        // Turn LED ON - assembly register manipulation
+        // Enable LED (set pin low)
         ldr r0, =GPIO_P0_OUTCLR
         movs r1, #1
-        lsls r1, r1, #21        // 1 << 21 (bit manipulation in assembly!)
+        lsls r1, r1, #21        // Shift to bit 21 position
         str r1, [r0]
         
-        // Assembly delay loop - ~1 second
-        ldr r2, =800000         // Hardcoded timing constant
+        // Software delay loop
+        ldr r2, =800000         // Delay counter value
     delay1:
         subs r2, r2, #1         // Decrement counter
-        bne delay1              // Branch if not zero
+        bne delay1              // Continue until zero
         
-        b blink_loop            // Infinite loop
+        b blink_loop            // Repeat cycle
 ```
 
-### 4. **Minimal Panic Handler (Only Rust Code)**
+### 4. **Panic Handler Implementation**
 ```rust
 #[panic_handler]
 fn panic(_: &core::panic::PanicInfo) -> ! {
-    unsafe { asm!("b .", options(noreturn)); }  // Pure assembly panic!
+    unsafe { asm!("b .", options(noreturn)); }
 }
 ```
 
-### 5. **Minimal Linker Script (`minimal.ld`) - Only 20 Lines!**
+### 5. **Minimal Linker Script (`minimal.ld`)**
 ```ld
-/* 🔥 MINIMAL HARDCORE LINKER SCRIPT 🔥
- * Only defines the absolute essentials - no memory layout, no initialization!
+/* Minimal ARM Cortex-M Linker Script
+ * Defines only essential section placement for bare-metal operation
  */
 
 ENTRY(Reset)
 
 SECTIONS
 {
-    /* Vector table MUST be at address 0x00000000 */
+    /* ARM Cortex-M vector table placement at reset address */
     .vector_table 0x00000000 : {
         KEEP(*(.vector_table))
     }
     
-    /* Code can go anywhere after - we don't care! */
+    /* Executable code section - linker determines placement */
     .text : {
         *(.text .text.*)
     }
     
-    /* Discard everything else - we don't use it! */
+    /* Discard unused sections to minimize binary size */
     /DISCARD/ : {
         *(.data .data.*)
         *(.bss .bss.*)
@@ -119,19 +115,10 @@ SECTIONS
 }
 ```
 
-**What this achieves:**
-- ✅ **Vector table at 0x00000000** (ARM hardware requirement)
-- ✅ **Code placement** (linker decides where, we don't care)
-- ✅ **Discard unused sections** (no .data, .bss, .rodata - we don't use globals!)
-
-
-
-### 4. **Final Binary**
-The linker produces an ELF file with:
-- **Vector table at 0x00000000** (hardware requirement)
-- **Your code in flash** (executable, persistent)
-- **Data sections organized** for proper RAM initialization
-- **All symbols resolved** for memory management
+**Technical achievements:**
+- **Vector table placement** at address 0x00000000 (ARM hardware requirement)
+- **Flexible code placement** with linker-determined addresses
+- **Binary size optimization** through unused section elimination
 
 ## Comparison with Other Examples
 
@@ -154,4 +141,29 @@ The linker produces an ELF file with:
 2. **Example 02**: Direct register manipulation and hardware understanding  
 3. **Example 03**: Complete bare-metal implementation and system-level programming
 
-## Technical Deep Dive
+## Building and Running
+
+```bash
+cd example_03_hello_world_asm
+cargo build    # Compiles with minimal build system
+cargo run      # Programs and executes on BBC micro:bit v2
+```
+
+**Expected results:**
+- **Minimal build output** - no external dependency compilation required
+- **Fast compilation** - assembly code compiles efficiently
+- **Small binary size** - approximately 100 bytes vs typical 4KB+ embedded binaries
+- **LED operation** - LED matrix displays blinking pattern with assembly-controlled timing
+
+**Memory Map Generated:**
+```
+Address    Size  Section       Content
+0x00000000   8   .vector_table  Stack pointer + reset handler
+0x00000008  ~90  .text          ARM Thumb assembly code
+```
+
+## Additional Resources
+
+- **[hardware.md](../hardware.md)** - Deep dive into address buses, internal memory architecture, and silicon-level operation
+- **[Example 01](../example_01_hello_world/)** - High-level HAL approach for comparison
+- **[Example 02](../example_02_hello_world_minimal_dependencies/)** - Intermediate register-level programming
