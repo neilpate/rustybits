@@ -36,28 +36,37 @@ This project uses **independent examples** rather than a Cargo workspace - each 
 
 ### [Example 03: Hello World (Zero Dependencies)](example_03_hello_world_no_dependencies/)
 **⚡ Bare Metal Implementation** - "How does the ENTIRE system work?"
-- **🎉 ZERO dependencies** - Everything implemented from scratch
+- **Zero dependencies** - Everything implemented from scratch
 - Custom ARM Cortex-M vector table and reset handler
 - Hand-crafted linker script and memory initialization
 - Direct assembly integration and complete system control
 - **Best for**: Deep understanding of embedded systems architecture
 
-> **🎓 Educational Philosophy**: Example 03 represents the **lowest level possible** understanding of embedded systems. While you wouldn't write production code this way (Example 01's approach is much more practical), seeing how everything works at the bare metal level gives you invaluable insight into what's actually happening when you use higher-level abstractions.
+### [Example 04: Hello World (Pure ARM Assembly)](example_03_hello_world_asm/)
+**🔥 Advanced Bare-Metal Implementation** - "Complete hardware control"
+- **Pure ARM Thumb assembly** implementation with minimal Rust scaffolding
+- Hardcoded memory addresses and stack pointer configuration
+- 8-byte minimal vector table with no runtime initialization
+- **Best for**: Silicon-level understanding and maximum performance optimization
+
+> **Educational Philosophy**: Examples 03 and 04 represent progressively lower levels of embedded systems programming. While production code typically uses higher-level abstractions (Example 01 approach), understanding bare-metal implementation provides valuable insight into the underlying hardware behavior and system architecture.
 >
-> Think of it as "embedded systems archaeology" - digging down through all the layers to understand the foundation that everything else is built upon!
+> Example 04 specifically demonstrates the absolute minimum required for ARM Cortex-M execution, showing exactly what instructions run on the processor without any runtime overhead or abstraction layers.
 
 ## The Learning Journey
 
-| Abstraction Level | Example 01 | Example 02 | Example 03 |
-|-------------------|------------|------------|------------|
-| **Dependencies** | 5 crates | 3 crates | **0 crates** 🎉 |
-| **Code Style** | `led.set_high()?` | `gpio.out.set(1 << 4)` | `ptr::write_volatile(0x50000508, 1 << 4)` |
-| **Startup** | Automatic | Automatic | **Manual reset handler** |
-| **Memory Init** | Hidden | Hidden | **Explicit RAM setup** |
-| **Vector Table** | Generated | Generated | **Hand-crafted** |
-| **When to Use** | Production code | Learning registers | **Understanding systems** |
+| Abstraction Level | Example 01 | Example 02 | Example 03 | Example 04 |
+|-------------------|------------|------------|------------|------------|
+| **Dependencies** | 5 crates | 3 crates | 0 crates | **0 crates** |
+| **Implementation** | High-level Rust | Register access | Bare metal Rust | **99% Assembly** |
+| **Code Style** | `led.set_high()?` | `gpio.out.set(1 << 4)` | `ptr::write_volatile(0x50000508, 1 << 4)` | **`str r1, [r0]`** |
+| **Startup** | Automatic | Automatic | Manual reset handler | **Assembly reset handler** |
+| **Memory Init** | Hidden | Hidden | Explicit RAM setup | **No initialization** |
+| **Vector Table** | Generated | Generated | Hand-crafted | **8-byte minimal** |
+| **Binary Size** | ~4KB+ | ~2KB+ | ~1KB+ | **~100 bytes** |
+| **When to Use** | Production code | Learning registers | Understanding systems | **Performance optimization** |
 
-Each example builds the same functionality (blinking LED) but reveals progressively more of the underlying machinery. By the end, you'll understand embedded systems from the hardware reset vector all the way up to your application code!
+Each example builds the same functionality (blinking LED) but reveals progressively more of the underlying machinery. The progression moves from high-level abstractions through register manipulation to complete bare-metal assembly implementation, providing comprehensive understanding of embedded systems from hardware reset vector to application logic.
 
 > **💡 Note**: Each example directory contains its own readme.md with detailed explanations, code walkthrough, and specific instructions for that example.
 
