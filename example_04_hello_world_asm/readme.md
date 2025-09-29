@@ -1,4 +1,4 @@
-# Example 03 - Hello World (Pure ARM Assembly)
+# Example 04 - Hello World (Pure ARM Assembly)
 
 > **Advanced Bare-Metal Implementation**
 > 
@@ -122,29 +122,30 @@ SECTIONS
 
 ## Comparison with Other Examples
 
-| Feature | Example 01 | Example 02 | **Example 03 ASM** |
-|---------|------------|------------|-------------------|
-| **Dependencies** | 5 crates | 3 crates | **0 crates** |
-| **Implementation** | High-level Rust | Rust with registers | **99% ARM assembly** |
-| **Reset Handler** | cortex-m-rt | cortex-m-rt | **Custom assembly** |
-| **Vector Table** | Auto-generated (1024+ bytes) | Auto-generated (1024+ bytes) | **8 bytes minimal** |
-| **Linker Script** | Built-in (complex) | Built-in (complex) | **20 lines optimized** |
-| **Memory Init** | Automatic .data/.bss | Automatic .data/.bss | **No initialization** |
-| **Stack Pointer** | Linker symbol | Linker symbol | **Hardcoded 0x20020000** |
-| **GPIO Access** | HAL abstractions | Direct registers | **Direct register addresses** |
-| **Binary Size** | ~4KB+ | ~2KB+ | **~100 bytes** |
-| **Complexity Level** | Beginner | Intermediate | **Advanced** |
-| **Learning Value** | Board basics | Register access | **Complete system understanding** |
+| Feature | Example 01 | Example 02 | Example 03 | **Example 04 ASM** |
+|---------|------------|------------|------------|-------------------|
+| **Dependencies** | 5 crates | 3 crates | 0 crates | **0 crates** |
+| **Implementation** | High-level Rust | Rust with registers | Bare metal Rust | **99% ARM assembly** |
+| **Reset Handler** | cortex-m-rt | cortex-m-rt | Custom Rust | **Custom assembly** |
+| **Vector Table** | Auto-generated (1024+ bytes) | Auto-generated (1024+ bytes) | Hand-crafted Rust | **8 bytes minimal** |
+| **Linker Script** | Built-in (complex) | Built-in (complex) | Custom linker script | **20 lines optimized** |
+| **Memory Init** | Automatic .data/.bss | Automatic .data/.bss | Explicit RAM setup | **No initialization** |
+| **Stack Pointer** | Linker symbol | Linker symbol | Linker symbol | **Hardcoded 0x20020000** |
+| **GPIO Access** | HAL abstractions | Direct registers | Direct register access | **Direct register addresses** |
+| **Binary Size** | ~4KB+ | ~2KB+ | ~1KB+ | **~100 bytes** |
+| **Complexity Level** | Beginner | Intermediate | Advanced | **Expert** |
+| **Learning Value** | Board basics | Register access | System understanding | **Complete hardware control** |
 
 ### **Learning Progression:**
 1. **Example 01**: High-level embedded programming with HAL abstractions
 2. **Example 02**: Direct register manipulation and hardware understanding  
 3. **Example 03**: Complete bare-metal implementation and system-level programming
+4. **Example 04**: Pure assembly implementation with maximum hardware control
 
 ## Building and Running
 
 ```bash
-cd example_03_hello_world_asm
+cd example_04_hello_world_asm
 cargo build    # Compiles with minimal build system
 cargo run      # Programs and executes on BBC micro:bit v2
 ```
@@ -167,3 +168,4 @@ Address    Size  Section       Content
 - **[hardware.md](../hardware.md)** - Deep dive into address buses, internal memory architecture, and silicon-level operation
 - **[Example 01](../example_01_hello_world/)** - High-level HAL approach for comparison
 - **[Example 02](../example_02_hello_world_minimal_dependencies/)** - Intermediate register-level programming
+- **[Example 03](../example_03_hello_world_no_dependencies/)** - Complete bare-metal Rust implementation
