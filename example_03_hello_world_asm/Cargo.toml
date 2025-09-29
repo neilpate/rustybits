@@ -4,31 +4,11 @@ authors = ["Neil Pate"]
 edition = "2021"
 version = "0.1.0"
 
-# ============================================================================
-# DEPENDENCIES - Minimal: just panic handling and runtime
-# ============================================================================
-
 [dependencies]
-# panic-halt = "1.0.0" # REMOVED: Using custom panic handler instead
-# cortex-m-rt = "0.7.0" # REMOVED: Implementing everything ourselves!
-# cortex-m = "0.7.0" # REMOVED: Using inline assembly instead
-
-# 🎉 ZERO DEPENDENCIES! 🎉
-
-# ============================================================================
-# TARGET CONFIGURATION
-# ============================================================================
-
-# Configure probe-rs as the runner for flashing
-[target.thumbv7em-none-eabihf]
-runner = "probe-rs run --chip nRF52833_xxAA"
-
-# ============================================================================
-# BINARY CONFIGURATION
-# ============================================================================
+# Zero external dependencies - all functionality implemented in ARM assembly
 
 [[bin]]
 name = "main"
 path = "src/main.rs"
-test = false         # Required: no_std doesn't support test framework
-bench = false        # Required: no_std doesn't support bench framework
+test = false
+bench = false

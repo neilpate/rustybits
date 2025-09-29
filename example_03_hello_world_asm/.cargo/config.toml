@@ -3,4 +3,12 @@ target = "thumbv7em-none-eabihf"
 
 [target.thumbv7em-none-eabihf]
 runner = "probe-rs run --chip nRF52833_xxAA"
-rustflags = ["-C", "linker=rust-lld", "-C", "link-arg=-Tlink.x"]
+# 🔥 HARDCORE: Minimal linker script approach - almost no external files! 🔥
+rustflags = [
+    "-C",
+    "linker=rust-lld",
+    "-C",
+    "link-arg=-Tminimal.ld",           # Tiny embedded linker script
+    "-C",
+    "link-arg=-Map=target/memory.map", # Generate memory map for debugging
+]
