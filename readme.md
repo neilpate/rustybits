@@ -49,6 +49,14 @@ This project uses **independent examples** rather than a Cargo workspace - each 
 - 8-byte minimal vector table with no runtime initialization
 - **Best for**: Silicon-level understanding and maximum performance optimization
 
+### [Example 05: Button-Controlled LED](example_05_buttons_polled/)
+**🎮 Interactive Input Processing** - "How do I handle user input?"
+- Button polling with edge detection and software debouncing
+- GPIO input configuration with pull-up resistors
+- State management for toggle functionality
+- Active-low input logic and mutability requirements
+- **Best for**: Learning input processing techniques and interactive embedded applications
+
 > **Educational Philosophy**: Examples 03 and 04 represent progressively lower levels of embedded systems programming. While production code typically uses higher-level abstractions (Example 01 approach), understanding bare-metal implementation provides valuable insight into the underlying hardware behavior and system architecture.
 >
 > Example 04 specifically demonstrates the absolute minimum required for ARM Cortex-M execution, showing exactly what instructions run on the processor without any runtime overhead or abstraction layers.
@@ -67,6 +75,8 @@ This project uses **independent examples** rather than a Cargo workspace - each 
 | **When to Use** | Production code | Learning registers | Understanding systems | **Performance optimization** |
 
 Each example builds the same functionality (blinking LED) but reveals progressively more of the underlying machinery. The progression moves from high-level abstractions through register manipulation to complete bare-metal assembly implementation, providing comprehensive understanding of embedded systems from hardware reset vector to application logic.
+
+**Examples 5+**: While Examples 01-04 focus on different abstraction levels of the same functionality, Examples 5 onwards explore different embedded programming concepts and peripherals (input processing, sensors, communication protocols, etc.) using practical implementation approaches.
 
 > **💡 Note**: Each example directory contains its own readme.md with detailed explanations, code walkthrough, and specific instructions for that example.
 
