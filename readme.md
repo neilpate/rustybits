@@ -4,7 +4,7 @@
 
 A collection of embedded Rust programming examples for the BBC micro:bit v2. This project demonstrates various aspects of embedded development using the nRF52833 microcontroller and the micro:bit v2 development board.
 
-This project is based on examples from [The Embedded Rust Book](https://docs.rust-embedded.org/book/), which provides comprehensive guidance for embedded Rust development.
+This project took inspiration and the initial Hello World example from [The Embedded Rust Book](https://docs.rust-embedded.org/book/) and has evolved to include progressively advanced embedded programming concepts and techniques. The Embedded Rust Book is an excellent reference and readers are encouraged to refer to it alongside these examples.
 
 ## Documentation
 
