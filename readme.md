@@ -49,13 +49,21 @@ This project uses **independent examples** rather than a Cargo workspace - each 
 - 8-byte minimal vector table with no runtime initialization
 - **Best for**: Silicon-level understanding and maximum performance optimization
 
-### [Example 05: Button-Controlled LED](example_05_buttons_polled/)
-**🎮 Interactive Input Processing** - "How do I handle user input?"
+### [Example 05: Button-Controlled LED (Polling)](example_05_buttons_polled/)
+**🎮 Interactive Input Processing** - "How do I handle user input with polling?"
 - Button polling with edge detection and software debouncing
 - GPIO input configuration with pull-up resistors
 - State management for toggle functionality
 - Active-low input logic and mutability requirements
-- **Best for**: Learning input processing techniques and interactive embedded applications
+- **Best for**: Learning basic input processing techniques and interactive embedded applications
+
+### [Example 06: Button-Controlled LED (Interrupts)](example_06_buttons_interrupts/)
+**⚡ Interrupt-Driven Processing** - "How do I use hardware interrupts for efficient input handling?"
+- GPIOTE peripheral configuration for hardware interrupt generation
+- Atomic state management between interrupt handler and main loop
+- Power-efficient operation with Wait-For-Interrupt (WFI) instruction
+- Direct register access and minimal interrupt service routines
+- **Best for**: Learning interrupt-driven architecture and power-efficient embedded design
 
 > **Educational Philosophy**: Examples 03 and 04 represent progressively lower levels of embedded systems programming. While production code typically uses higher-level abstractions (Example 01 approach), understanding bare-metal implementation provides valuable insight into the underlying hardware behavior and system architecture.
 >
