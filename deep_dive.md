@@ -34,6 +34,59 @@ rustflags = ["-C", "linker=rust-lld", "-C", "link-arg=-Tlink.x"]
   - **`-C linker=rust-lld`**: Use LLVM's linker (works better for embedded)
   - **`-C link-arg=-Tlink.x`**: Use cortex-m-rt's linker script
 
+### Project Configuration (`Cargo.toml`)
+
+Each example has its own `Cargo.toml` file that defines the package metadata and dependencies. Understanding this file is crucial for embedded Rust development.
+
+#### Example Cargo.toml Structure:
+```toml
+[package]
+name = "main"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+panic-halt = "0.2"
+cortex-m = "0.7"
+cortex-m-rt = "0.7"
+microbit-v2 = "0.13"
+```
+
+#### Package Section (`[package]`)
+- **`name`**: The package name - we standardize to `"main"` for consistency across examples
+  - This determines the binary name: `target/thumbv7em-none-eabihf/debug/main`
+  - VS Code launch configurations reference this binary name
+- **`version`**: Semantic version following [semver](https://semver.org/) (Major.Minor.Patch)
+- **`edition`**: Rust edition (2021 is current, enables latest language features)
+
+#### Dependencies Section (`[dependencies]`)
+Essential crates for embedded development:
+
+**Core Runtime Dependencies:**
+- **`panic-halt`**: Defines panic handler behavior (halts on panic - required for `#![no_std]`)
+- **`cortex-m`**: Low-level ARM Cortex-M processor functionality
+- **`cortex-m-rt`**: Runtime and startup code for Cortex-M processors
+
+**Hardware Abstraction:**
+- **`microbit-v2`**: Board Support Package (BSP) for BBC micro:bit v2
+- **`nrf52833-hal`**: Hardware Abstraction Layer for nRF52833 chip (included via microbit-v2)
+
+#### Version Specifications
+Cargo uses [semantic versioning](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#specifying-dependencies-from-cratesio) for dependency management:
+
+- **`"0.7"`**: Compatible with 0.7.x (allows 0.7.0, 0.7.1, etc., but not 0.8.0)
+- **`"0.13.0"`**: Exact version specification
+- **`"^0.7"`**: Explicit caret requirement (same as "0.7")
+- **`"~0.7.1"`**: Tilde requirement (allows 0.7.1, 0.7.2, but not 0.7.0 or 0.8.0)
+
+#### Binary Naming Convention
+All examples use `name = "main"` to ensure consistent binary naming:
+- **Build output**: `target/thumbv7em-none-eabihf/debug/main`
+- **VS Code debugging**: Launch configurations reference `"main"` binary
+- **Cargo run**: Executes the `main` binary via probe-rs
+
+This standardization simplifies configuration management across the project.
+
 ### Target Architecture Explained
 ```toml
 # .cargo/config.toml

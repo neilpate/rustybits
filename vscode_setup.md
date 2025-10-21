@@ -207,7 +207,7 @@ Launch configurations define debugging sessions:
             "coreConfigs": [
                 {
                     "coreIndex": 0,
-                    "programBinary": "target/thumbv7em-none-eabihf/debug/example_01_hello_world"
+                    "programBinary": "target/thumbv7em-none-eabihf/debug/main"
                 }
             ],
             "preLaunchTask": "Build Example 01"
@@ -226,7 +226,7 @@ Launch configurations define debugging sessions:
             "coreConfigs": [
                 {
                     "coreIndex": 0,
-                    "programBinary": "target/thumbv7em-none-eabihf/debug/example_02_hello_world_minimal_dependencies"
+                    "programBinary": "target/thumbv7em-none-eabihf/debug/main"
                 }
             ],
             "preLaunchTask": "Build Example 02"
@@ -262,6 +262,9 @@ Launch configurations define debugging sessions:
 - **`flashingConfig`**: Controls how the program is loaded onto the microcontroller
 - **`programBinary`**: Path to the compiled ELF file to debug
 - **`preLaunchTask`**: Task to run before debugging (builds the project)
+
+#### Binary Naming Convention:
+All examples in this project use **`main`** as the standardized binary name. This is configured in each example's `Cargo.toml` file with `name = "main"`, which produces a compiled binary at `target/thumbv7em-none-eabihf/debug/main`. This standardization simplifies the VS Code configuration and makes it consistent across all examples.
 
 ### VS Code Settings (`.vscode/settings.json`) - Optional
 
