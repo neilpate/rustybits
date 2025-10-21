@@ -129,7 +129,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a21dea9854beb860f3062d10228ce9b976da520a73474aed3171ec276bc0c032"
 
 [[package]]
-name = "example_05_buttons_polled"
+name = "example_06_buttons_interrupts"
 version = "0.1.0"
 dependencies = [
  "cortex-m",

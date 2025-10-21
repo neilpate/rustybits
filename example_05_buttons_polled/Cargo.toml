@@ -33,7 +33,7 @@ runner = "probe-rs run --chip nRF52833_xxAA"
 # ============================================================================
 
 [[bin]]
-name = "example_05_buttons_polled"
+name = "main"
 path = "src/main.rs" 
 test = false    # Required: no_std doesn't support test framework
 bench = false   # Required: no_std doesn't support bench framework

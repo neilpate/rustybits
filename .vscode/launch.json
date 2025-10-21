@@ -18,7 +18,7 @@
             "coreConfigs": [
                 {
                     "coreIndex": 0,
-                    "programBinary": "target/thumbv7em-none-eabihf/debug/example_01_hello_world"
+                    "programBinary": "target/thumbv7em-none-eabihf/debug/main"
                 }
             ],
             "preLaunchTask": "Build Example 01"
@@ -37,10 +37,86 @@
             "coreConfigs": [
                 {
                     "coreIndex": 0,
-                    "programBinary": "target/thumbv7em-none-eabihf/debug/example_02_hello_world_minimal_dependencies"
+                    "programBinary": "target/thumbv7em-none-eabihf/debug/main"
                 }
             ],
             "preLaunchTask": "Build Example 02"
+        },
+        {
+            "type": "probe-rs-debug",
+            "request": "launch",
+            "name": "Debug Example 03",
+            "cwd": "${workspaceFolder}/example_03_hello_world_no_dependencies",
+            "connectUnderReset": false,
+            "chip": "nRF52833_xxAA",
+            "flashingConfig": {
+                "flashingEnabled": true,
+                "haltAfterReset": false
+            },
+            "coreConfigs": [
+                {
+                    "coreIndex": 0,
+                    "programBinary": "target/thumbv7em-none-eabihf/debug/main"
+                }
+            ],
+            "preLaunchTask": "Build Example 03"
+        },
+        {
+            "type": "probe-rs-debug",
+            "request": "launch",
+            "name": "Debug Example 04",
+            "cwd": "${workspaceFolder}/example_04_hello_world_asm",
+            "connectUnderReset": false,
+            "chip": "nRF52833_xxAA",
+            "flashingConfig": {
+                "flashingEnabled": true,
+                "haltAfterReset": false
+            },
+            "coreConfigs": [
+                {
+                    "coreIndex": 0,
+                    "programBinary": "target/thumbv7em-none-eabihf/debug/main"
+                }
+            ],
+            "preLaunchTask": "Build Example 04"
+        },
+        {
+            "type": "probe-rs-debug",
+            "request": "launch",
+            "name": "Debug Example 05",
+            "cwd": "${workspaceFolder}/example_05_buttons_polled",
+            "connectUnderReset": false,
+            "chip": "nRF52833_xxAA",
+            "flashingConfig": {
+                "flashingEnabled": true,
+                "haltAfterReset": false
+            },
+            "coreConfigs": [
+                {
+                    "coreIndex": 0,
+                    "programBinary": "target/thumbv7em-none-eabihf/debug/main"
+                }
+            ],
+            "preLaunchTask": "Build Example 05"
+        },
+        {
+            "type": "probe-rs-debug",
+            "request": "launch",
+            "name": "Debug Example 06",
+            "cwd": "${workspaceFolder}/example_06_buttons_interrupts",
+            "connectUnderReset": false,
+            "chip": "nRF52833_xxAA",
+            "flashingConfig": {
+                "flashingEnabled": true,
+                "haltAfterReset": false
+            },
+            "coreConfigs": [
+                {
+                    "coreIndex": 0,
+                    "programBinary": "target/thumbv7em-none-eabihf/debug/main"
+                }
+            ],
+            "preLaunchTask": "Build Example 06"
         }
     ]
 }

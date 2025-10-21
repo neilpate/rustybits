@@ -68,6 +68,66 @@
             "problemMatcher": [
                 "$rustc"
             ]
+        },
+        {
+            "label": "Build Example 03",
+            "type": "shell",
+            "command": "cargo",
+            "args": [
+                "build"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/example_03_hello_world_no_dependencies"
+            },
+            "group": "build",
+            "problemMatcher": [
+                "$rustc"
+            ]
+        },
+        {
+            "label": "Build Example 04",
+            "type": "shell",
+            "command": "cargo",
+            "args": [
+                "build"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/example_04_hello_world_asm"
+            },
+            "group": "build",
+            "problemMatcher": [
+                "$rustc"
+            ]
+        },
+        {
+            "label": "Build Example 05",
+            "type": "shell",
+            "command": "cargo",
+            "args": [
+                "build"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/example_05_buttons_polled"
+            },
+            "group": "build",
+            "problemMatcher": [
+                "$rustc"
+            ]
+        },
+        {
+            "label": "Build Example 06",
+            "type": "shell",
+            "command": "cargo",
+            "args": [
+                "build"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/example_06_buttons_interrupts"
+            },
+            "group": "build",
+            "problemMatcher": [
+                "$rustc"
+            ]
         }
     ]
 }
