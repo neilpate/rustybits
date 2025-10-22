@@ -286,67 +286,7 @@ impl Led<On> {
 
 ---
 
-## Troubleshooting Tips
 
-### Common Compile Errors
-
-**"can't find crate for `std`"**
-```rust
-// Add this to the top of your file:
-#![no_std]
-```
-
-**"function `main` is not allowed to have a return type"**  
-```rust
-// Use #[entry] instead of regular main:
-#![no_main]
-use cortex_m_rt::entry;
-
-#[entry]
-fn main() -> ! {  // ← Note the ! return type
-    loop {}
-}
-```
-
-**"attempted to leave type `T` undefined"**
-```rust
-// Add a panic handler:
-use panic_halt as _;
-```
-
-### Memory Issues
-
-**Stack overflow:**
-- Reduce local variable sizes
-- Use `static` for large buffers  
-- Check your stack size in `memory.x`
-
-**"no global memory allocator":**
-- You tried to use heap allocation (`Vec`, `HashMap`, etc.)
-- Use `heapless` alternatives or static allocation
-
-### Debugging Tips
-
-**Use RTT for printf-style debugging:**
-```rust
-use rtt_target::{rprintln, rtt_init_print};
-
-#[entry] 
-fn main() -> ! {
-    rtt_init_print!();
-    rprintln!("Hello from embedded Rust!");
-    loop {}
-}
-```
-
-**Check your target configuration:**
-```toml
-# In .cargo/config.toml:
-[build]
-target = "thumbv7em-none-eabihf"  # ← Must match your chip architecture
-```
-
----
 
 ## Next Steps
 
