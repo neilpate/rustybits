@@ -9,6 +9,7 @@ This project took inspiration and the initial Hello World example from [The Embe
 ## Documentation
 
 - 📋 **[vscode_setup.md](vscode_setup.md)** - Complete VS Code configuration guide for embedded Rust development
+- 🦀 **[embedded_rust_primer.md](embedded_rust_primer.md)** - Beginner's guide to embedded Rust: `#![no_std]`, `#[entry]`, HAL patterns, and memory management
 - 🔍 **[deep_dive.md](deep_dive.md)** - Technical deep dive into the Rust-to-hardware compilation pipeline
 - ⚡ **[hardware.md](hardware.md)** - How memory mapping physically works: address bus, Flash, RAM, and peripherals
 - 📄 **[micro:bit v2 Schematic](doc/MicroBit_V2.2.1_nRF52820%20schematic.PDF)** - Official hardware schematic (PDF)

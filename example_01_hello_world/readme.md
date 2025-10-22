@@ -76,6 +76,8 @@ fn main() -> ! {
 }
 ```
 
+> **🦀 New to embedded Rust?** Check out the **[Embedded Rust Primer](../embedded_rust_primer.md)** to understand `#![no_std]`, `#[entry]`, and other embedded Rust essentials before diving into this example!
+
 ## How It Works
 
 This example demonstrates the basics of micro:bit LED control:
@@ -118,28 +120,28 @@ The crates do enormous work during compilation to transform your Rust code into 
 - Resolves all hardware register addresses to compile-time constants
 - Creates a single, self-contained binary with no external dependencies
 
-#### 2. **Before Your Code Even Runs** (cortex-m-rt crate):
+#### 2. **Before Your `main()` Function Runs** (cortex-m-rt crate):
 - Sets up the ARM Cortex-M4 processor after power on
 - Initializes the stack pointer and memory layout
 - Copies initial data from flash to RAM
 - Zeros out uninitialized memory sections
 - Calls your `main()` function with everything ready
 
-#### 2. **Board Initialization** (`microbit::Board::take()`):
+#### 3. **Board Initialization** (`microbit::Board::take()`):
 - **Clock System**: Configures the nRF52833's complex clock tree (high-frequency, low-frequency, and peripheral clocks)
 - **Power Management**: Sets up voltage regulators and power domains
 - **GPIO Configuration**: Maps the physical pins to their micro:bit functions (LED matrix, buttons, etc.)
 - **Hardware Verification**: Ensures the chip is the expected nRF52833 variant
 - **Resource Management**: Creates a singleton to prevent multiple access to hardware
 
-#### 3. **Pin Configuration** (`into_push_pull_output()`):
+#### 4. **Pin Configuration** (`into_push_pull_output()`):
 - **Multiplexer Setup**: Configures the pin to be a GPIO (not UART, SPI, etc.)
 - **Direction Setting**: Programs the GPIO direction register for output
 - **Drive Strength**: Sets electrical characteristics (how much current the pin can supply)
 - **Initial State**: Sets the pin to the specified starting voltage level
 - **Safety Checks**: Ensures the pin isn't already in use elsewhere
 
-#### 4. **Timer Initialization** (`let mut timer0 = timer::Timer::new(board.TIMER0)`):
+#### 5. **Timer Initialization** (`let mut timer0 = timer::Timer::new(board.TIMER0)`):
 
 **Code Breakdown:**
 ```rust
@@ -164,99 +166,6 @@ impl TIMER0 {
         0x40008000 as *const _  // ← Actual nRF52833 TIMER0 base address
     }
 }
-```
-
-**What Is `PhantomData` And Why Is It Everywhere?**
-
-`PhantomData` is Rust's way of saying "I need this type information at compile time, but I don't need any actual data at runtime." It's crucial for embedded systems:
-
-```rust
-use std::marker::PhantomData;
-
-// Without PhantomData - this won't compile:
-pub struct Timer<T> {
-    // ERROR: unused type parameter `T`
-}
-
-// With PhantomData - this compiles and uses zero memory:
-pub struct Timer<T> {
-    _marker: PhantomData<T>,  // ← Tells Rust we "use" the T type
-}
-
-// Real-world embedded usage:
-pub struct Timer<TIMER0> {
-    _marker: PhantomData<TIMER0>,  // ← Compile-time: "This is a TIMER0 wrapper"
-}                                  // ← Runtime: Takes 0 bytes of memory!
-```
-
-**Why Embedded Rust Uses PhantomData Extensively:**
-
-**1. Type Safety Without Memory Cost:**
-```rust
-let timer0 = Timer::<TIMER0>::new();   // Type: Timer<TIMER0>
-let timer1 = Timer::<TIMER1>::new();   // Type: Timer<TIMER1>
-
-// These are different types at compile time:
-fn use_timer0(t: Timer<TIMER0>) { /* ... */ }
-// use_timer0(timer1);  // ← COMPILE ERROR! Type mismatch!
-
-// But at runtime, both are identical (zero-size):
-assert_eq!(std::mem::size_of::<Timer<TIMER0>>(), 0);
-assert_eq!(std::mem::size_of::<Timer<TIMER1>>(), 0);
-```
-
-**2. Hardware Resource Tracking:**
-```rust
-// Each peripheral type prevents mix-ups:
-impl Timer<TIMER0> {
-    fn ptr() -> *const RegisterBlock { 0x40008000 as *const _ }
-}
-impl Timer<TIMER1> {
-    fn ptr() -> *const RegisterBlock { 0x40009000 as *const _ }
-}
-
-// PhantomData ensures you can't accidentally use wrong address:
-let timer0_wrapper = Timer::<TIMER0>::new();
-// timer0_wrapper internally "knows" it's for TIMER0 hardware at 0x40008000
-```
-
-**3. Memory Layout Analysis:**
-```rust
-// The hardware peripheral structs:
-struct TIMER0 { _marker: PhantomData<*const ()> }    // 0 bytes
-struct TIMER1 { _marker: PhantomData<*const ()> }    // 0 bytes  
-struct GPIO0  { _marker: PhantomData<*const ()> }    // 0 bytes
-
-// A struct containing 40+ peripherals:
-struct Peripherals {
-    timer0: TIMER0,  // 0 bytes
-    timer1: TIMER1,  // 0 bytes  
-    gpio0: GPIO0,    // 0 bytes
-    // ... 37 more peripherals, each 0 bytes
-}
-// Total size: 0 bytes! Pure type information.
-```
-
-**4. The Magic: Compile-Time Safety, Zero Runtime Cost:**
-```rust
-// What the programmer writes:
-let mut timer = Timer::new(board.TIMER0);
-timer.start();
-
-// What the compiler generates (simplified assembly):
-// mov r0, #0x40008000    ; Load TIMER0 base address  
-// mov r1, #1             ; Load "start" value
-// str r1, [r0, #0]       ; Write to TASKS_START register
-// 
-// No timer wrapper overhead! Direct hardware access with type safety!
-```
-
-**PhantomData In Action Throughout The Codebase:**
-- **PAC peripherals**: `TIMER0 { _marker: PhantomData }` - tracks which hardware
-- **HAL wrappers**: `Timer<T> { _marker: PhantomData<T> }` - prevents type confusion  
-- **Pin types**: `Pin<P0_21> { _marker: PhantomData }` - prevents pin mix-ups
-
-**The Result**: You get compile-time guarantees that you're using the right hardware, with absolutely zero runtime memory or performance cost!
 ```
 
 **What `timer::Timer::new()` Does:**
@@ -315,31 +224,20 @@ timer0.delay_ms(100);  // ← This compiles to register operations
 // (*TIMER0::ptr()).cc[0].write(|w| unsafe { w.cc().bits(100_000) }); // Dangerous!
 ```
 
-**Memory Layout After Initialization:**
-```rust
-// Stack memory:
-let mut timer0: Timer<TIMER0> = Timer {
-    timer: TIMER0 { _marker: PhantomData },  // Zero bytes
-    _phantom: PhantomData,                   // Zero bytes  
-};
-// Total stack size: ~0 bytes (just type information)
-
-// Hardware registers (memory-mapped I/O):
-// 0x40008510: PRESCALER = 0x04           (16MHz ÷ 16 = 1MHz)
-// 0x40008504: MODE = 0x00               (Timer mode)
-// 0x40008508: BITMODE = 0x03            (32-bit mode)
-```
-
 **Why This Design Is Powerful:**
 - **Zero-cost**: Timer wrapper has no runtime overhead
 - **Type-safe**: Can't accidentally reuse the same timer hardware  
 - **Hardware-optimal**: Direct register access with safety guarantees
 - **Trait-based**: Implements `embedded-hal` DelayNs for portability
 
-#### 5. **Runtime Operations** (Every `set_high()`, `delay_ms()` call):
+#### 6. **Runtime Operations** (Every `set_high()`, `delay_ms()` call):
 - **GPIO Control**: Direct register writes to toggle pin voltage instantly
 - **Timer Operations**: Hardware-based delays with microsecond precision
 - **No OS Overhead**: Direct hardware access with zero operating system latency
+
+---
+
+## How The HAL Crates Make This Possible
 
 **Without these crates**, you'd need to:
 - Read the 400+ page nRF52833 reference manual
@@ -454,63 +352,17 @@ cortex_m::interrupt::free(|_| {  // Disables ALL interrupts
 
 **Memory Layout of Singleton Variables:**
 ```rust
-// In the final binary, these live in RAM:
-// Address    | Variable               | Value | Purpose
-// 0x20000100 | DEVICE_PERIPHERALS     | false | nRF52833 peripherals available?
-// 0x20000101 | CORE_PERIPHERALS       | false | ARM core peripherals available?
-// 0x20000102 | (other static vars)    | ...   | Other global state
+// These live somewhere in RAM (exact addresses determined by linker):
+// Variable               | Size  | Purpose
+// DEVICE_PERIPHERALS     | 1 byte| nRF52833 peripherals available?
+// CORE_PERIPHERALS       | 1 byte| ARM core peripherals available?
+
+// The linker places these in the .bss section of RAM
+// (exact addresses depend on other static variables and linker script)
 
 // After first Board::take():
-// 0x20000100 | DEVICE_PERIPHERALS     | true  | nRF52833 peripherals CLAIMED
-// 0x20000101 | CORE_PERIPHERALS       | true  | ARM core peripherals CLAIMED
-```
-
-**Critical Section Deep Dive:**
-```rust
-cortex_m::interrupt::free(|_| {
-    // What this does at the CPU level:
-    // 1. Reads current PRIMASK register (interrupt enable/disable)
-    // 2. Executes CPSID i instruction (disable interrupts)
-    // 3. Runs your code atomically
-    // 4. Executes CPSIE i instruction (restore interrupts)
-});
-
-// Assembly equivalent:
-// mrs  r0, PRIMASK    ; Save interrupt state
-// cpsid i             ; Disable interrupts  
-// ldrb r1, [r2]       ; Load DEVICE_PERIPHERALS
-// cmp  r1, #0         ; Compare with false
-// bne  already_taken  ; Branch if not equal (already true)
-// movs r1, #1         ; Set to true
-// strb r1, [r2]       ; Store back to DEVICE_PERIPHERALS
-// msr  PRIMASK, r0    ; Restore interrupt state
-```
-```
-
-**2. `pac::CorePeripherals::take()` - The ARM Cortex-M4 Core Level:**
-```rust
-// Inside cortex-m crate (ARM standard):
-static mut CORE_PERIPHERALS: bool = false;
-
-pub fn take() -> Option<Self> {
-    cortex_m::interrupt::free(|_| {
-        if unsafe { CORE_PERIPHERALS } {
-            None  // Already taken!
-        } else {
-            unsafe { CORE_PERIPHERALS = true; }
-            Some(CorePeripherals {
-                NVIC: NVIC { _marker: PhantomData },    // Interrupt controller
-                SCB: SCB { _marker: PhantomData },      // System control block
-                SYST: SYST { _marker: PhantomData },    // SysTick timer
-                MPU: MPU { _marker: PhantomData },      // Memory protection unit
-                FPU: FPU { _marker: PhantomData },      // Floating point unit
-                CPUID: CPUID { _marker: PhantomData },  // CPU identification
-                DWT: DWT { _marker: PhantomData },      // Debug watchpoint/trace
-                // ... ARM Cortex-M4F core peripherals
-            })
-        }
-    })
-}
+// DEVICE_PERIPHERALS     = true   // nRF52833 peripherals CLAIMED
+// CORE_PERIPHERALS       = true   // ARM core peripherals CLAIMED
 ```
 
 **What This Hardware Claiming Prevents:**
@@ -531,6 +383,102 @@ let peripherals2 = Peripherals::take();           // Returns None - prevented!
 - **Second call**: `Board::take()` returns `None` - hardware already claimed!
 - **Why this matters**: Prevents multiple parts of code from interfering with the same hardware
 - **Runtime cost**: Just a boolean check - zero performance overhead
+
+---
+
+## Understanding PhantomData: Zero-Cost Type Safety
+
+You've probably noticed `PhantomData` throughout the embedded code. This is a crucial Rust concept that deserves explanation:
+
+### What is PhantomData?
+
+`PhantomData` is a zero-sized type marker that tells the Rust compiler about type relationships that don't exist at runtime but matter for type safety:
+
+```rust
+use std::marker::PhantomData;
+
+// Without PhantomData - this won't compile:
+pub struct Timer<T> {
+    // ERROR: unused type parameter `T`
+}
+
+// With PhantomData - this compiles and uses zero memory:
+pub struct Timer<T> {
+    _marker: PhantomData<T>,  // ← Tells Rust we "use" the T type
+}
+```
+
+### Why Embedded Rust Uses PhantomData Extensively
+
+#### 1. Type Safety Without Memory Cost
+```rust
+let timer0 = Timer::<TIMER0>::new();   // Type: Timer<TIMER0>
+let timer1 = Timer::<TIMER1>::new();   // Type: Timer<TIMER1>
+
+// These are different types at compile time:
+fn use_timer0(t: Timer<TIMER0>) { /* ... */ }
+// use_timer0(timer1);  // ← COMPILE ERROR! Type mismatch!
+
+// But at runtime, both are identical (zero-size):
+assert_eq!(std::mem::size_of::<Timer<TIMER0>>(), 0);
+assert_eq!(std::mem::size_of::<Timer<TIMER1>>(), 0);
+```
+
+#### 2. Hardware Resource Tracking
+```rust
+// Each peripheral type prevents mix-ups:
+impl Timer<TIMER0> {
+    fn ptr() -> *const RegisterBlock { 0x40008000 as *const _ }
+}
+impl Timer<TIMER1> {
+    fn ptr() -> *const RegisterBlock { 0x40009000 as *const _ }
+}
+
+// PhantomData ensures you can't accidentally use wrong address
+let timer0_wrapper = Timer::<TIMER0>::new();
+// timer0_wrapper internally "knows" it's for TIMER0 hardware at 0x40008000
+```
+
+#### 3. Memory Layout Analysis
+```rust
+// The hardware peripheral structs:
+struct TIMER0 { _marker: PhantomData<*const ()> }    // 0 bytes
+struct TIMER1 { _marker: PhantomData<*const ()> }    // 0 bytes  
+struct GPIO0  { _marker: PhantomData<*const ()> }    // 0 bytes
+
+// A struct containing 40+ peripherals:
+struct Peripherals {
+    timer0: TIMER0,  // 0 bytes
+    timer1: TIMER1,  // 0 bytes  
+    gpio0: GPIO0,    // 0 bytes
+    // ... 37 more peripherals, each 0 bytes
+}
+// Total size: 0 bytes! Pure type information.
+```
+
+#### 4. The Magic: Compile-Time Safety, Zero Runtime Cost
+```rust
+// What the programmer writes:
+let mut timer = Timer::new(board.TIMER0);
+timer.start();
+
+// What the compiler generates (simplified assembly):
+// mov r0, #0x40008000    ; Load TIMER0 base address  
+// mov r1, #1             ; Load "start" value
+// str r1, [r0, #0]       ; Write to TASKS_START register
+// 
+// No PhantomData overhead - it completely disappears!
+```
+
+### PhantomData In Action Throughout The Codebase
+- **PAC peripherals**: `TIMER0 { _marker: PhantomData }` - tracks which hardware
+- **HAL wrappers**: `Timer<T> { _marker: PhantomData<T> }` - prevents type confusion  
+- **Pin types**: `Pin<P0_21> { _marker: PhantomData }` - prevents pin mix-ups
+- **State tracking**: Different types for different hardware states (input vs output pins)
+
+**The Result**: You get compile-time guarantees that you're using the right hardware, with absolutely zero runtime memory or performance cost!
+
+---
 
 **What Gets Pre-configured:**
 ```rust
