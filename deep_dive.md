@@ -53,11 +53,11 @@ microbit-v2 = "0.13"
 ```
 
 #### Package Section (`[package]`)
-- **`name`**: The package name - we standardize to `"main"` for consistency across examples
-  - This determines the binary name: `target/thumbv7em-none-eabihf/debug/main`
-  - VS Code launch configurations reference this binary name
-- **`version`**: Semantic version following [semver](https://semver.org/) (Major.Minor.Patch)
-- **`edition`**: Rust edition (2021 is current, enables latest language features)
+- **`name`**: Package name - standardized to `"main"` for consistency
+  - Determines binary name: `target/thumbv7em-none-eabihf/debug/main`
+  - VS Code launch configurations reference this binary
+- **`version`**: Semantic version following [semver](https://semver.org/)
+- **`edition`**: Rust edition (2021 is current)
 
 #### Dependencies Section (`[dependencies]`)
 Essential crates for embedded development:
@@ -70,16 +70,6 @@ Essential crates for embedded development:
 **Hardware Abstraction:**
 - **`microbit-v2`**: Board Support Package (BSP) for BBC micro:bit v2
 - **`nrf52833-hal`**: Hardware Abstraction Layer for nRF52833 chip (included via microbit-v2)
-
-
-
-#### Binary Naming Convention
-All examples use `name = "main"` to ensure consistent binary naming:
-- **Build output**: `target/thumbv7em-none-eabihf/debug/main`
-- **VS Code debugging**: Launch configurations reference `"main"` binary
-- **Cargo run**: Executes the `main` binary via probe-rs
-
-This standardization simplifies configuration management across the project.
 
 ### Target Architecture Explained
 ```toml
@@ -138,14 +128,9 @@ cargo build
 └── Compile main crate with generated configuration
 ```
 
-**Key Insight**: Build scripts execute on your development machine (x86_64) while generating configuration for the target hardware (ARM). This enables automatic hardware configuration without manual intervention.
+**Key Insight**: Build scripts execute on the development host (x86_64) while generating configuration for the target hardware (ARM). This cross-compilation approach enables automatic hardware-specific configuration without manual intervention.
 
 > **Deep Dive**: For comprehensive details about build script mechanics, execution order, and output directories, see the [Build Scripts section](#how-build-scripts-work-in-embedded-rust) in Advanced Concepts.
-
-**Target Architecture Components**:
-- **`thumbv7em`**: ARMv7E-M instruction set architecture (Cortex-M4/M7 with DSP extensions)
-- **`none`**: Bare-metal execution environment (no operating system)
-- **`eabihf`**: Embedded Application Binary Interface with hardware floating-point support
 
 #### Compilation Process
 ```bash
@@ -163,7 +148,7 @@ The Rust compiler executes the following compilation phases:
 ## Step 2: Memory Layout Configuration
 
 ### Linker Script Generation
-The `nrf52833-hal` crate (included as a dependency within the `microbit-v2` crate) generates a `memory.x` file during its build script execution:
+The `nrf52833-hal` crate generates the `memory.x` linker script during its build script execution, defining the nRF52833's memory regions:
 
 ```linker-script
 MEMORY
@@ -173,6 +158,8 @@ MEMORY
   RAM   : ORIGIN = 0x20000000, LENGTH = 128K
 }
 ```
+
+> **Note**: For detailed information about build script mechanics and memory layout generation, see the [Build Scripts section](#how-build-scripts-work-in-embedded-rust) in Advanced Concepts.
 
 ## Step 3: Linking Process
 
@@ -448,13 +435,13 @@ The nRF52820 interface chip provides:
 PC (probe-rs) ←→ USB ←→ nRF52820 Interface ←→ SWD ←→ nRF52833 Target
 ```
 
-When you run `cargo run`, probe-rs:
+When you run `cargo run`, probe-rs executes the following sequence:
 1. **Connects via USB** to the nRF52820 interface chip
-2. **Sends debug commands** over a proprietary protocol  
-3. **Interface chip translates** these to SWD signals
+2. **Sends debug commands** using a proprietary protocol  
+3. **Interface chip translates** commands to SWD signals
 4. **Target chip responds** via SWD back through the interface
 
-This is different from external debug probes (J-Link, ST-Link) where the probe is separate hardware.
+Unlike external debug probes (J-Link, ST-Link), the micro:bit integrates the debug interface directly on the board.
 
 ### Connection Process
 1. **USB enumeration**: PC detects micro:bit as USB device (VID: 0x0d28, PID: 0x0204)
@@ -478,22 +465,22 @@ panic = "abort"     # Smaller panic handler
 
 ## The Embedded Rust Ecosystem
 
-These examples leverage the power of Rust's embedded ecosystem to hide much of the low-level complexity:
+The Rust embedded ecosystem provides multiple abstraction layers that simplify bare-metal development while maintaining safety and efficiency.
 
 ### Hardware Abstraction Layers
-- **`microbit-v2` crate**: Provides a high-level board abstraction - you get simple functions like `board.display_pins.row1` instead of manually configuring GPIO registers
-- **`nrf52833-hal` crate**: Handles the Nordic chip specifics - timers, GPIO, and peripherals are wrapped in safe, easy-to-use APIs
-- **`cortex-m-rt` crate**: Takes care of the startup sequence, memory layout, and low-level ARM Cortex-M details
+- **`microbit-v2` crate**: Board Support Package providing high-level abstractions for display pins, buttons, and peripherals
+- **`nrf52833-hal` crate**: Hardware Abstraction Layer wrapping Nordic chip specifics (timers, GPIO, peripherals) in safe APIs
+- **`cortex-m-rt` crate**: Runtime providing startup sequence, memory layout, and low-level ARM Cortex-M functionality
 
-### What's Hidden Away
-Behind the simple Rust code are hundreds of lines of:
-- **Register manipulation**: Direct hardware register reads/writes for GPIO, timers, clocks
-- **Memory layout configuration**: Linker scripts defining where code and data live in flash/RAM  
-- **Startup code**: Assembly routines that run before your `main()` function
-- **Interrupt vectors**: Hardware interrupt handling and vector tables
-- **Clock configuration**: Setting up the chip's various clock sources and frequencies
+### Implementation Details Hidden by Abstraction
+The simple high-level Rust code conceals substantial low-level complexity:
+- **Register manipulation**: Direct hardware register operations for GPIO, timers, and clocks
+- **Memory layout configuration**: Linker scripts defining code and data placement in flash and RAM  
+- **Startup code**: Assembly routines executing before application code
+- **Interrupt vectors**: Hardware interrupt handling and vector table configuration
+- **Clock configuration**: Microcontroller clock source and frequency management
 
-This layered approach allows you to write high-level, safe Rust code while the ecosystem handles the embedded systems complexity underneath.
+This layered architecture enables high-level, safe Rust development while the ecosystem manages embedded systems complexity.
 
 ## Advanced Embedded Rust Concepts
 
@@ -544,18 +531,18 @@ cargo build
 - **Cross-compilation**: Build scripts always run on host, regardless of target architecture
 
 #### Memory Layout Generation (`cortex-m-rt` + `nrf52833-hal`)
-**The nRF52833-HAL build script** automatically generates the `memory.x` linker script during compilation:
+The nRF52833-HAL build script automatically generates the `memory.x` linker script:
 - **Location**: `target/debug/build/nrf52833-hal-*/out/memory.x` 
-- **Contents**: nRF52833's exact memory layout (512KB Flash at 0x00000000, 128KB RAM at 0x20000000)
+- **Contents**: nRF52833 memory layout specification (512KB Flash at 0x00000000, 128KB RAM at 0x20000000)
 
-**The nRF52833-PAC build script** generates `device.x` with interrupt vector definitions:
+The nRF52833-PAC build script generates `device.x` with interrupt vector definitions:
 - **Location**: `target/debug/build/nrf52833-pac-*/out/device.x`
 - **Contents**: Complete interrupt vector table for all nRF52833 peripherals
 
 **Integration with cortex-m-rt**:
-- cortex-m-rt automatically finds and uses these generated files during linking
-- Sets up proper memory sections (.text, .data, .bss, .rodata) for embedded systems
-- Explains why embedded Rust projects work seamlessly without manual `memory.x` file creation
+- cortex-m-rt automatically locates and utilizes these generated files during linking
+- Configures proper memory sections (.text, .data, .bss, .rodata) for embedded systems
+- Enables seamless embedded Rust development without manual memory configuration
 
 **Generated Memory Layout:**
 ```linker
@@ -569,42 +556,58 @@ MEMORY
 
 ### The HAL Ecosystem Layers
 
-Embedded Rust uses a layered architecture for safe, portable hardware access:
+Embedded Rust employs a layered architecture for safe, portable hardware access:
 
-#### 1. embedded-hal (Universal Traits - Interfaces Only)
+#### 1. embedded-hal (Universal Traits)
 ```rust
 use embedded_hal::{delay::DelayNs, digital::OutputPin};
 ```
-- **Purpose**: Defines standard interfaces that work across different microcontrollers
-- **What it provides**: **Only trait definitions** like `DelayNs`, `OutputPin`, `SpiDevice` - **no actual implementation**
-- **Think of it as**: A contract that says "delay functions should look like this" but doesn't provide the actual delay code
-- **Benefit**: Write code once, run on any chip that implements these traits
+- **Purpose**: Defines standard interfaces compatible across different microcontrollers
+- **Provides**: Trait definitions (DelayNs, OutputPin, SpiDevice) without concrete implementations
+- **Function**: Establishes contracts specifying interface requirements without implementation details
+- **Benefit**: Enables portable code execution across different hardware platforms
 
-#### 2. microbit-v2 (Board Support Package + Chip HAL)
+#### 2. nrf52833-hal (Chip-Specific Implementation)
+
+**Note**: This HAL is accessed through the microbit-v2 BSP's re-export (`microbit::hal`) rather than as a direct dependency. The microbit-v2 crate includes and re-exports the nrf52833-hal internally.
+
 ```rust
-use microbit::hal::{gpio, timer};        // ← nRF52833 HAL re-exported
-let board = microbit::Board::take().unwrap();  // ← Board-specific configuration
+use microbit::hal::{gpio, timer, pac};  // Accesses nrf52833-hal via BSP
 ```
-- **Exposes**: Complete nRF52833 chip functionality mapped to micro:bit v2 board layout
-- **How it works**: Internally uses `nrf52833-hal` for chip-specific implementations and adds micro:bit board configuration
-- **What you get**: 
-  - `microbit::hal` - All nRF52833 peripherals (GPIO, timers, SPI, etc.) implementing `embedded-hal` traits
-  - `microbit::Board` - Pre-configured pin assignments, LED matrix mapping, button setup
-- **Key insight**: You never import `nrf52833-hal` directly - everything comes through the microbit crate
+- **Purpose**: Provides safe, type-safe abstractions for nRF52833 chip peripherals
+- **Implementation**: Wraps PAC (Peripheral Access Crate) register operations with embedded-hal trait implementations
+- **Functionality**:
+  - **GPIO**: Configures pins as inputs/outputs with pull-up/pull-down resistors
+  - **Timers**: Provides delay functionality and timer configuration
+  - **Peripherals**: SPI, I2C, UART, ADC, PWM with safe APIs
+- **Type Safety**: Uses type-state pattern to prevent invalid configurations at compile time
+- **Zero-cost**: Abstractions compile to identical assembly as direct register access
 
-#### How the Re-export Works:
+#### 3. microbit-v2 (Board Support Package)
 ```rust
-// Inside microbit-v2 crate source code:
-pub use nrf52833_hal as hal;  // ← Makes nRF HAL available as microbit::hal
+use microbit::hal::{gpio, timer};
+let board = microbit::Board::take().unwrap();
+```
+- **Exposes**: Complete nRF52833 functionality mapped to micro:bit v2 board layout
+- **Implementation**: Utilizes `nrf52833-hal` for chip-specific implementations with board-specific configuration
+- **Components**: 
+  - `microbit::hal` - nRF52833 peripherals (GPIO, timers, SPI) implementing embedded-hal traits
+  - `microbit::Board` - Pre-configured pin assignments, LED matrix mapping, button configuration
+- **Design**: Direct re-export from microbit crate eliminates need for separate nrf52833-hal imports
 
-// Your imports:
-use microbit::hal::{gpio, timer};        // ← Gets nrf52833_hal functionality
-let board = microbit::Board::take();     // ← Gets board-specific pin mappings
+#### Re-export Mechanism:
+```rust
+// microbit-v2 crate internal implementation:
+pub use nrf52833_hal as hal;
 
-// You get both chip-level control AND board-level convenience in one crate!
+// Application code:
+use microbit::hal::{gpio, timer};  // Accesses nrf52833_hal functionality
+let board = microbit::Board::take();  // Accesses board-specific pin mappings
 ```
 
-#### What `Board::take()` Actually Does:
+This design provides both chip-level peripheral control and board-level convenience through a unified interface.
+
+#### Board::take() Implementation:
 ```rust
 // Inside microbit-v2 source code:
 pub fn take() -> Option<Self> {
@@ -615,118 +618,129 @@ pub fn take() -> Option<Self> {
 }
 ```
 
+This method ensures exclusive hardware access through the singleton pattern described below.
+
 ### The Singleton Pattern in Embedded Systems
 
 #### Hardware Singleton Implementation
 
-The PAC (Peripheral Access Crate) implements a critical singleton pattern to prevent multiple access to hardware:
+The PAC (Peripheral Access Crate) implements a singleton pattern preventing concurrent hardware access:
 
 ```rust
-// Inside nrf52833-pac crate (auto-generated from chip specification):
-static mut DEVICE_PERIPHERALS: bool = false;  // ← THE SINGLETON GLOBAL VARIABLE
+// nrf52833-pac crate (auto-generated from chip specification):
+static mut DEVICE_PERIPHERALS: bool = false;
 
 pub fn take() -> Option<Self> {
     cortex_m::interrupt::free(|_| {  // Critical section - interrupts disabled
         if unsafe { DEVICE_PERIPHERALS } {
-            None  // Already taken!
+            None  // Already claimed
         } else {
             unsafe { DEVICE_PERIPHERALS = true; }  // Mark as claimed
             Some(Peripherals {
-                TIMER0: TIMER0 { _marker: PhantomData },  // Your hardware timer
-                TIMER1: TIMER1 { _marker: PhantomData },  // 4 more timers available
-                P0: P0 { _marker: PhantomData },          // GPIO Port 0 (32 pins)
-                P1: P1 { _marker: PhantomData },          // GPIO Port 1 (16 pins)
-                GPIOTE: GPIOTE { _marker: PhantomData },  // GPIO interrupt controller
-                RADIO: RADIO { _marker: PhantomData },    // 2.4GHz radio (Bluetooth)
-                TEMP: TEMP { _marker: PhantomData },      // Temperature sensor
-                RNG: RNG { _marker: PhantomData },        // Random number generator
-                ADC: SAADC { _marker: PhantomData },      // Analog-to-digital converter
-                // ... 40+ more peripherals
+                TIMER0: TIMER0 { _marker: PhantomData },
+                TIMER1: TIMER1 { _marker: PhantomData },
+                P0: P0 { _marker: PhantomData },
+                P1: P1 { _marker: PhantomData },
+                GPIOTE: GPIOTE { _marker: PhantomData },
+                RADIO: RADIO { _marker: PhantomData },
+                TEMP: TEMP { _marker: PhantomData },
+                RNG: RNG { _marker: PhantomData },
+                ADC: SAADC { _marker: PhantomData },
+                // ... additional peripherals
             })
         }
     })
 }
 ```
 
-#### The Global Variable Singleton Implementation
+#### Singleton Implementation Details
 
-**`static mut DEVICE_PERIPHERALS: bool = false` Breakdown:**
-- **`static`**: Stored in global memory, exists for the entire program lifetime
-- **`mut`**: Mutable - can be changed from `false` to `true`  
-- **`bool = false`**: Initially `false` (peripherals available), becomes `true` (peripherals taken)
-- **Memory location**: Fixed address in RAM, typically around `0x20000000 + offset`
-- **Size**: Just 1 byte - extremely efficient singleton tracking
+**`static mut DEVICE_PERIPHERALS: bool` Analysis:**
+- **`static`**: Global memory storage with program lifetime
+- **`mut`**: Mutable state tracking (false → true)  
+- **`bool`**: Single-byte efficiency for peripheral availability tracking
+- **Memory location**: .bss section in RAM (approximately 0x20000000 + offset)
 
-#### Why `static mut` Is Dangerous (But Controlled Here):
+#### Thread Safety Through Critical Sections
+
+The `cortex_m::interrupt::free` function provides atomic access by disabling interrupts during singleton operations:
+
 ```rust
-// This would be unsafe in normal Rust:
-static mut COUNTER: i32 = 0;
-fn increment() {
-    unsafe { COUNTER += 1; }  // Race condition possible!
-}
-
-// But PAC makes it safe with critical sections:
-cortex_m::interrupt::free(|_| {  // Disables ALL interrupts
-    unsafe { DEVICE_PERIPHERALS = true; }  // Atomic operation guaranteed
+// Critical section implementation ensures atomicity:
+cortex_m::interrupt::free(|_| {
+    // All interrupts disabled - no preemption possible
+    unsafe { DEVICE_PERIPHERALS = true; }  // Atomic state modification
 });
 ```
 
+This mechanism prevents race conditions that would occur with unsynchronized mutable static access:
+
+```rust
+// Without critical sections (unsafe):
+static mut COUNTER: i32 = 0;
+fn increment() {
+    unsafe { COUNTER += 1; }  // Potential race condition
+}
+```
+
 #### Memory Layout of Singleton Variables:
+
+Linker places singleton state variables in RAM's .bss section:
+
 ```rust
-// These live somewhere in RAM (exact addresses determined by linker):
-// Variable               | Size  | Purpose
-// DEVICE_PERIPHERALS     | 1 byte| nRF52833 peripherals available?
-// CORE_PERIPHERALS       | 1 byte| ARM core peripherals available?
-
-// The linker places these in the .bss section of RAM
-// (exact addresses depend on other static variables and linker script)
-
-// After first Board::take():
-// DEVICE_PERIPHERALS     = true   // nRF52833 peripherals CLAIMED
-// CORE_PERIPHERALS       = true   // ARM core peripherals CLAIMED
+// Typical memory layout in RAM:
+// Address        Variable                 Size    Purpose
+// 0x20000000+x   DEVICE_PERIPHERALS      1 byte  nRF52833 peripheral availability
+// 0x20000001+y   CORE_PERIPHERALS        1 byte  ARM core peripheral availability
 ```
 
-#### What This Hardware Claiming Prevents:
+After first `Board::take()` call, both flags transition from false to true, preventing subsequent hardware access attempts.
+
+#### Singleton Safety Benefits
+
+The singleton pattern enforces exclusive hardware access at runtime:
+
 ```rust
-// Without singleton pattern (dangerous):
-let timer1 = unsafe { &*TIMER0::ptr() };  // Direct memory access
-let timer2 = unsafe { &*TIMER0::ptr() };  // Same timer, different variable!
+// Unsafe: Direct hardware access without ownership tracking
+let timer1 = unsafe { &*TIMER0::ptr() };
+let timer2 = unsafe { &*TIMER0::ptr() };  // Same hardware, different references
 timer1.start();
-timer2.stop();  // Conflicts with timer1! Hardware chaos!
+timer2.stop();  // Conflicting operations cause hardware malfunction
 
-// With singleton pattern (safe):
-let peripherals1 = Peripherals::take().unwrap();  // Gets hardware
-let peripherals2 = Peripherals::take();           // Returns None - prevented!
+// Safe: Singleton pattern prevents duplicate access
+let peripherals1 = Peripherals::take().unwrap();  // Acquires exclusive hardware ownership
+let peripherals2 = Peripherals::take();           // Returns None - already claimed
 ```
 
-#### The Singleton Pattern in Action:
-- **First call**: `Board::take()` returns `Some(Board)` with exclusive hardware access
-- **Second call**: `Board::take()` returns `None` - hardware already claimed!
-- **Why this matters**: Prevents multiple parts of code from interfering with the same hardware
-- **Runtime cost**: Just a boolean check - zero performance overhead
+**Singleton Pattern Characteristics:**
+- **First call**: Returns `Some(Board)` with exclusive hardware ownership
+- **Subsequent calls**: Return `None` - hardware access already granted
+- **Runtime overhead**: Single boolean check per acquisition attempt
+- **Enforcement mechanism**: Static state variable tracks ownership in critical section
 
 #### Understanding PhantomData in Hardware Types
 
-You may have noticed `PhantomData` markers in the peripheral structures above. This is a zero-cost Rust pattern used extensively in embedded code:
+Hardware peripheral structures use `PhantomData` markers for zero-cost type safety:
 
 ```rust
-struct TIMER0 { _marker: PhantomData<*const ()> }  // 0 bytes at runtime
-struct TIMER1 { _marker: PhantomData<*const ()> }  // 0 bytes at runtime
+struct TIMER0 { _marker: PhantomData<*const ()> }  // Zero runtime size
+struct TIMER1 { _marker: PhantomData<*const ()> }  // Zero runtime size
 ```
 
-**Purpose**: `PhantomData` allows the type system to track which specific hardware peripheral you're using without any runtime cost:
+`PhantomData` enables compile-time peripheral type tracking without runtime overhead:
 
 ```rust
-let timer0 = Timer::<TIMER0>::new();   // Type: Timer<TIMER0>  
-let timer1 = Timer::<TIMER1>::new();   // Type: Timer<TIMER1>
+let timer0 = Timer::<TIMER0>::new();  // Type: Timer<TIMER0>  
+let timer1 = Timer::<TIMER1>::new();  // Type: Timer<TIMER1>
 
-// Compiler prevents mixing them up:
+// Type system prevents peripheral confusion:
 fn use_timer0(t: Timer<TIMER0>) { /* ... */ }
-// use_timer0(timer1);  // ← COMPILE ERROR! Wrong timer type!
+use_timer0(timer1);  // Compile error: type mismatch
 
-// But both compile to identical assembly - zero runtime overhead
+// Generated assembly identical for both types - zero overhead
 ```
 
-This pattern ensures type safety (can't mix up TIMER0 vs TIMER1) while maintaining the efficiency required for embedded systems.
+This mechanism provides type safety (prevents TIMER0/TIMER1 confusion) while maintaining efficiency requirements for embedded systems.
 
-This advanced knowledge helps explain why the simple high-level code in the examples works so reliably and safely, despite the complexity of embedded systems programming.
+The singleton pattern and zero-cost abstractions demonstrated above explain how high-level embedded Rust code achieves reliability and safety without sacrificing the performance critical for resource-constrained microcontroller environments.
+
