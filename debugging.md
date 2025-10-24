@@ -286,7 +286,221 @@ fn main() -> ! {
 | **Performance Impact** | Very low | Higher due to interrupt handling |
 | **Bidirectional** | Yes | Yes |
 | **External Hardware** | None (uses debug interface) | USB-to-serial adapter |
-| **Speed** | Very fast | Limited by baud rate |
+| **Speed** | Very fast (~1 MB/s) | Limited by baud rate (9600-115200 bps) |
+
+### RTT Protocol Architecture
+
+For developers interested in understanding how RTT works internally, this section explains the underlying protocol architecture and communication mechanisms.
+
+RTT leverages the standard ARM debug infrastructure already present on the micro:bit v2, requiring no special hardware or firmware support from the target application.
+
+#### Communication Stack
+
+```
+Development PC              Interface MCU            Target MCU
+┌──────────────┐           ┌──────────────┐        ┌──────────────┐
+│  probe-rs    │           │  nRF52820    │        │  nRF52833    │
+│              │           │              │        │              │
+│ ┌──────────┐ │  USB      │ ┌──────────┐ │  SWD   │ ┌──────────┐ │
+│ │RTT Client│◄├───────────┤►│CMSIS-DAP │◄├────────┤►│RAM Buffers│ │
+│ └──────────┘ │           │ │ Firmware │ │        │ │(RTT Ctrl)│ │
+└──────────────┘           │ └──────────┘ │        │ └──────────┘ │
+                           └──────────────┘        └──────────────┘
+```
+
+#### CMSIS-DAP Protocol
+
+The nRF52820 interface MCU implements **CMSIS-DAP** (Cortex Microcontroller Software Interface Standard - Debug Access Port), an ARM-standardized protocol for USB-based debug adapters.
+
+**Key Characteristics:**
+- **Vendor-Neutral**: Open standard implemented by multiple vendors
+- **USB HID Transport**: Uses standard USB Human Interface Device class
+- **Command-Based**: Simple packet-based request/response protocol
+- **SWD Translation**: Converts USB commands into SWD transactions
+
+**Protocol Layers:**
+```
+Application (probe-rs)
+       ↓
+CMSIS-DAP Commands (USB HID packets)
+       ↓
+USB Controller Driver
+       ↓
+[nRF52820 Interface MCU]
+       ↓
+SWD Protocol Implementation
+       ↓
+Physical SWD Interface (SWCLK + SWDIO)
+       ↓
+Target MCU Debug Port
+```
+
+#### Interface MCU Transparency
+
+The nRF52820 interface MCU functions as a **transparent protocol bridge** with no knowledge of higher-level debug protocols like RTT:
+
+**What the Interface MCU Does:**
+- Receives CMSIS-DAP commands via USB
+- Translates commands into SWD transactions
+- Executes memory read/write operations on target
+- Returns results via USB
+
+**What the Interface MCU Does NOT Do:**
+- Parse or interpret RTT data structures
+- Buffer or process RTT messages
+- Require special RTT firmware support
+- Know anything about the target application logic
+
+This transparency means:
+- The interface MCU works with any ARM Cortex-M target
+- No firmware updates needed for new debug protocols
+- The target application has full control over its memory
+
+#### RTT Discovery and Operation
+
+The host debugging tool (probe-rs) performs all RTT-specific operations:
+
+**1. RTT Control Block Discovery**
+
+When probe-rs starts an RTT session, it scans the target's RAM to locate the RTT control block:
+
+```
+Target RAM (nRF52833)
+┌─────────────────────────┐ 0x20000000
+│                         │
+│  Application Data       │
+│                         │
+├─────────────────────────┤
+│  RTT Control Block      │ ← probe-rs scans for this
+│  ┌───────────────────┐  │
+│  │ "SEGGER RTT"      │  │ (16-byte signature)
+│  │ Buffer Count      │  │
+│  │ Up Buffer 0 ptr   │  │
+│  │ Down Buffer 0 ptr │  │
+│  └───────────────────┘  │
+├─────────────────────────┤
+│  RTT Buffer Memory      │
+│  ┌───────────────────┐  │
+│  │ Output Buffer     │  │ (application writes here)
+│  │ Input Buffer      │  │ (application reads here)
+│  └───────────────────┘  │
+└─────────────────────────┘ 0x20040000
+
+Process:
+1. probe-rs reads RAM in chunks via SWD
+2. Searches for "SEGGER RTT" signature
+3. Parses control block structure
+4. Identifies buffer locations and sizes
+```
+
+**2. Runtime Communication**
+
+Once the control block is located, communication occurs through continuous polling:
+
+```
+┌──────────────┐                    ┌──────────────┐
+│  probe-rs    │                    │  Application │
+│  (Host PC)   │                    │  (nRF52833)  │
+└──────┬───────┘                    └──────┬───────┘
+       │                                   │
+       │  1. Read buffer write pointer ────┤
+       │◄──────────────────────────────────│
+       │                                   │
+       │  2. Read buffer read pointer      │
+       │◄──────────────────────────────────│
+       │                                   │
+       │  3. Calculate available data      │
+       │     (write_ptr - read_ptr)        │
+       │                                   │
+       │  4. Read buffer contents ─────────┤
+       │◄──────────────────────────────────│
+       │                                   │
+       │  5. Update read pointer           │
+       ├──────────────────────────────────►│
+       │                                   │
+       │  6. Display data to user          │
+       │                                   │
+       │  ```
+       │  [Repeat at ~1kHz polling rate]   │
+```
+
+**Memory Operations via SWD:**
+- All operations use standard SWD memory read/write commands
+- No special RTT-specific commands required at the protocol level
+- Interface MCU simply forwards memory access requests
+- Polling occurs continuously at approximately 1 kHz   │
+```
+
+**Memory Operations via SWD:**
+- All operations use standard SWD memory read/write commands
+- No special RTT commands required
+- Interface MCU simply forwards memory access requests
+- Polling occurs continuously (typically 1000 Hz)
+
+**Performance Characteristics:**
+- **Throughput**: Up to ~1 MB/s with optimal configuration
+- **Latency**: ~1 ms typical (limited by polling interval)
+- **CPU Impact**: ~0% on target (lock-free ring buffer)
+- **Determinism**: Non-intrusive, no interrupts required
+
+#### Zero-Copy Architecture
+
+RTT achieves high performance through a zero-copy design:
+
+**Application Side (Target):**
+```rust
+rprintln!("Value: {}", x);
+// 1. Formats string into local buffer
+// 2. Copies to RTT buffer in single operation
+// 3. Updates write pointer atomically
+// 4. Returns immediately (no blocking)
+```
+
+**Host Side (probe-rs):**
+```
+// Continuous background thread polling RTT buffers:
+loop {
+    read_write_pointer();      // SWD read
+    read_read_pointer();       // SWD read
+    if (write_ptr != read_ptr) {
+        read_buffer_data();    // SWD read (bulk transfer)
+        update_read_pointer(); // SWD write
+        output_to_terminal();
+    }
+    sleep(1ms);                // ~1 kHz polling rate
+}
+```
+
+**Benefits:**
+- No interrupts or context switches on target
+- No additional buffer copying in target application
+- Lock-free synchronization using atomic pointer updates
+- Continues operating even when no debugger is connected (buffer wraps)
+
+#### Comparison with Traditional Debug Methods
+
+| Aspect | RTT | Semihosting | UART |
+|--------|-----|-------------|------|
+| **Transport** | SWD memory access | SWD breakpoint | Dedicated serial pins |
+| **CPU Impact** | ~0% | 100% (halts CPU) | ~5% (interrupt overhead) |
+| **Speed** | ~1 MB/s | Very slow | 9600-115200 bps |
+| **Pins Required** | 0 (uses debug pins) | 0 (uses debug pins) | 2 (TX/RX) |
+| **Debugger Required** | Yes | Yes | No |
+| **Bidirectional** | Yes | Yes | Yes |
+| **Real-time Safe** | Yes | No | Yes (with care) |
+
+### CMSIS-DAP vs Proprietary Debug Protocols
+
+The micro:bit v2 uses CMSIS-DAP, an open standard for debug adapters. Understanding how it compares to proprietary alternatives helps contextualize the design choices:
+
+| Protocol | Vendor | Advantages | Limitations |
+|----------|--------|------------|-------------|
+| **CMSIS-DAP** | ARM (Open) | Universal, no drivers needed | Standard USB speeds |
+| **J-Link** | SEGGER | Very fast, advanced features | Proprietary, expensive |
+| **ST-Link** | STMicroelectronics | Optimized for STM32 | Primarily for ST devices |
+| **Black Magic Probe** | Open source | Integrated GDB server | Limited to GDB workflow |
+
+The micro:bit's choice of CMSIS-DAP ensures broad tool compatibility and requires no special drivers on modern operating systems.
 
 ## Debug Security Considerations
 
