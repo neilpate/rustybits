@@ -35,10 +35,70 @@ While this code looks simple, here's the logical sequence of complex work the Ru
 
 The crates do enormous work during compilation to transform your Rust code into efficient embedded machine code:
 
-#### Memory Layout Generation (`cortex-m-rt`)
-- Automatically generates `memory.x` linker script with nRF52833's exact flash/RAM layout
-- Creates the ARM Cortex-M interrupt vector table with your reset handler
+#### How Build Scripts Are Executed
+
+When you run `cargo build`, Rust executes build scripts in dependency order **before** compiling the main crate:
+
+**1. Build Script Discovery:**
+- Cargo scans all dependencies for `build.rs` files
+- Both nRF52833-PAC and nRF52833-HAL have `build.rs` files that get detected automatically
+- Build scripts are compiled as separate binaries first
+
+**2. Build Script Execution Order:**
+```
+cargo build
+├── Compile build scripts (host target - your PC)
+│   ├── nrf52833-pac/build.rs → target/debug/build/nrf52833-pac-*/build-script-build.exe
+│   ├── nrf52833-hal/build.rs → target/debug/build/nrf52833-hal-*/build-script-build.exe  
+│   └── cortex-m-rt/build.rs → target/debug/build/cortex-m-rt-*/build-script-build.exe
+├── Execute build script executables (in dependency order)
+│   ├── Run nrf52833-pac build-script-build.exe → generates device.x
+│   ├── Run nrf52833-hal build-script-build.exe → generates memory.x
+│   └── Run cortex-m-rt build-script-build.exe → sets up linker config
+└── Compile main crate (ARM target - thumbv7em-none-eabihf)
+    └── Links with generated files from build outputs
+```
+
+**Build Script Compilation Process:**
+- Cargo compiles each `build.rs` file into a separate executable binary
+- On Windows: `build-script-build.exe` (accompanied by `.pdb` debug files)
+- These executables execute on the development machine, not the target hardware
+
+**3. Build Script Output Directories:**
+- Each build script gets its own output directory: `target/debug/build/crate-name-hash/out/`
+- Generated files (like `memory.x`) are placed in these directories
+- Cargo automatically adds these paths to the linker search path with `-L` flags
+
+**4. Environment and Communication:**
+- Build scripts run on your development machine (x86_64), not the target (ARM)
+- They can read environment variables, generate code, create files
+- Output via `println!("cargo:...")` instructions tells Cargo what to do
+- Example: `println!("cargo:rustc-link-search={}", out_dir)` adds linker paths
+
+**5. When Build Scripts Run:**
+- **Every clean build**: All build scripts execute
+- **Incremental builds**: Only if dependencies change or build script source changes
+- **Cross-compilation**: Build scripts always run on host, regardless of target architecture
+
+This mechanism enables the nRF52833-HAL to generate `memory.x` during compilation without requiring manual intervention.
+
+#### Memory Layout Generation (`cortex-m-rt` + `nrf52833-hal`)
+- **The nRF52833-HAL build script** automatically generates the `memory.x` linker script during compilation:
+  - **Location**: `target/thumbv7em-none-eabihf/debug/build/nrf52833-hal-*/out/memory.x`
+  - **Contents**: nRF52833's exact memory layout (512KB Flash at 0x00000000, 128KB RAM at 0x20000000)
+- **The nRF52833-PAC build script** generates `device.x` with interrupt vector definitions
+- **cortex-m-rt** automatically finds and uses these generated files during linking
 - Sets up proper memory sections (.text, .data, .bss, .rodata) for embedded systems
+
+**Generated Memory Layout:**
+```linker
+/* Linker script for the nRF52 - WITHOUT SOFT DEVICE */
+MEMORY
+{
+  FLASH : ORIGIN = 0x00000000, LENGTH = 512K
+  RAM : ORIGIN = 0x20000000, LENGTH = 128K
+}
+```
 
 #### Hardware Abstraction Compilation (`microbit-v2`, `nrf52833-hal`)
 - Your high-level `set_high()` calls compile to single ARM assembly instructions like `str r1, [r0]` (store register to memory)
@@ -182,7 +242,7 @@ timer0.delay_ms(100);  // ← This compiles to register operations
 - Debug timing issues and hardware conflicts with expensive equipment
 - Handle ARM assembly startup code and linker scripts manually
 
-**The Result**: Your simple `board.display_pins.row1.set_high()` compiles to just 2-3 ARM assembly instructions that directly flip hardware bits, but you get to write safe, high-level Rust code that's checked at compile time!
+**The Result**: The simple `board.display_pins.row1.set_high()` call compiles to just 2-3 ARM assembly instructions that directly manipulate hardware bits, while maintaining safe, high-level Rust code that is verified at compile time.
 
 ## The HAL Ecosystem Layers
 
@@ -411,7 +471,7 @@ timer.start();
 - **Pin types**: `Pin<P0_21> { _marker: PhantomData }` - prevents pin mix-ups
 - **State tracking**: Different types for different hardware states (input vs output pins)
 
-**The Result**: You get compile-time guarantees that you're using the right hardware, with absolutely zero runtime memory or performance cost!
+**The Result**: This provides compile-time guarantees for correct hardware usage with zero runtime memory or performance overhead.
 
 ---
 
