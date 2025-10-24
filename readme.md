@@ -68,6 +68,14 @@ This project uses **independent examples** rather than a Cargo workspace - each 
 - Direct register access and minimal interrupt service routines
 - **Best for**: Learning interrupt-driven architecture and power-efficient embedded design
 
+### [Example 07: RTT Debug Output](example_07_rtt/)
+**🔍 Real-Time Debug Logging** - "How do I debug embedded applications without UART?"
+- RTT (Real-Time Transfer) for high-speed debug output
+- Printf-style debugging via the debug probe connection
+- Zero GPIO pins required, no UART configuration needed
+- Automatic timestamping and formatted output support
+- **Best for**: Learning modern embedded debugging techniques and real-time logging
+
 > **Educational Philosophy**: Examples 03 and 04 represent progressively lower levels of embedded systems programming. While production code typically uses higher-level abstractions (Example 01 approach), understanding bare-metal implementation provides valuable insight into the underlying hardware behavior and system architecture.
 >
 > Example 04 specifically demonstrates the absolute minimum required for ARM Cortex-M execution, showing exactly what instructions run on the processor without any runtime overhead or abstraction layers.
