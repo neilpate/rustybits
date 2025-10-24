@@ -6,7 +6,7 @@ A collection of embedded Rust programming examples for the BBC micro:bit v2. Thi
 
 This project took inspiration and the initial Hello World example from [The Embedded Rust Book](https://docs.rust-embedded.org/book/) and has evolved to include progressively advanced embedded programming concepts and techniques. The Embedded Rust Book is an excellent reference and readers are encouraged to refer to it alongside these examples.
 
-> **Note on the name**: This repository shares its name with the excellent [Rustybits YouTube channel](https://www.youtube.com/@rustybits) by pure coincidence. They had the name first! The channel provides comprehensive embedded Rust programming tutorials and is definitely worth checking out, though it is unaffiliated with this project.
+> **Note on the name**: This repository shares its name with the excellent [Rustybits YouTube channel](https://www.youtube.com/@therustybits/videos) by pure coincidence. They had the name first! The channel provides comprehensive embedded Rust programming tutorials and is definitely worth checking out, though it is unaffiliated with this project.
 
 ## Documentation
 
