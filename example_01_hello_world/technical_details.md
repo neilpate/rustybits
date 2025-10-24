@@ -1,8 +1,8 @@
-# Example 01 - Technical Deep Dive
+# Example 01 - Technical Details
 
-This document provides detailed technical explanations of what's happening behind the scenes in the Hello World LED blink example.
+This document explains what's happening in the Hello World LED blink example, focused on understanding the specific code and concepts in this example.
 
-## Project Structure Analysis
+## Project Structure
 
 This example contains everything needed to build and run independently:
 
@@ -27,480 +27,108 @@ When you configure:
 
 Current flows from row1 → through the LED → to col1, lighting up the LED at their intersection.
 
-## What the Crates Are Doing Behind the Scenes
+## What the Crates Are Doing
 
-While this code looks simple, here's the logical sequence of complex work the Rust embedded ecosystem handles for you:
+While this code looks simple, the Rust embedded ecosystem handles complex work behind the scenes:
 
-### 1. Compilation Magic (What Happens When You Build)
+### 1. Memory Layout (Automatic)
 
-The crates do enormous work during compilation to transform your Rust code into efficient embedded machine code:
+Example 01 works without a local `memory.x` file because:
+- The `microbit-v2` crate automatically generates one during compilation
+- It contains the nRF52833's memory layout: 512KB Flash, 128KB RAM
+- The linker uses this to place your code at the right memory addresses
 
-#### How Build Scripts Are Executed
+### 2. Cross-Compilation
 
-When you run `cargo build`, Rust executes build scripts in dependency order **before** compiling the main crate:
+Your Rust code gets compiled to ARM assembly:
+- Target: `thumbv7em-none-eabihf` (ARM Cortex-M4F)
+- Your `set_high()` calls become direct register writes
+- All type checking happens at compile time - no runtime overhead
 
-**1. Build Script Discovery:**
-- Cargo scans all dependencies for `build.rs` files
-- Both nRF52833-PAC and nRF52833-HAL have `build.rs` files that get detected automatically
-- Build scripts are compiled as separate binaries first
+### 3. Hardware Startup
 
-**2. Build Script Execution Order:**
-```
-cargo build
-├── Compile build scripts (host target - your PC)
-│   ├── nrf52833-pac/build.rs → target/debug/build/nrf52833-pac-*/build-script-build.exe
-│   ├── nrf52833-hal/build.rs → target/debug/build/nrf52833-hal-*/build-script-build.exe  
-│   └── cortex-m-rt/build.rs → target/debug/build/cortex-m-rt-*/build-script-build.exe
-├── Execute build script executables (in dependency order)
-│   ├── Run nrf52833-pac build-script-build.exe → generates device.x
-│   ├── Run nrf52833-hal build-script-build.exe → generates memory.x
-│   └── Run cortex-m-rt build-script-build.exe → sets up linker config
-└── Compile main crate (ARM target - thumbv7em-none-eabihf)
-    └── Links with generated files from build outputs
-```
+Before your `main()` runs, the `cortex-m-rt` crate:
+- Sets up the ARM processor after power-on
+- Initializes memory and the stack
+- Calls your `main()` function when ready
 
-**Build Script Compilation Process:**
-- Cargo compiles each `build.rs` file into a separate executable binary
-- On Windows: `build-script-build.exe` (accompanied by `.pdb` debug files)
-- These executables execute on the development machine, not the target hardware
+### 4. Board Initialization (`microbit::Board::take()`)
 
-**3. Build Script Output Directories:**
-- Each build script gets its own output directory: `target/debug/build/crate-name-hash/out/`
-- Generated files (like `memory.x`) are placed in these directories
-- Cargo automatically adds these paths to the linker search path with `-L` flags
+When you call `microbit::Board::take().unwrap()`:
+- **Hardware Detection**: Verifies the nRF52833 chip is present and working
+- **Pin Mapping**: Sets up all GPIO pins with their micro:bit functions
+- **Clock Setup**: Configures the chip's internal clocks for proper operation
+- **Safety**: Creates a singleton - only one part of your code can control the hardware
 
-**4. Environment and Communication:**
-- Build scripts run on your development machine (x86_64), not the target (ARM)
-- They can read environment variables, generate code, create files
-- Output via `println!("cargo:...")` instructions tells Cargo what to do
-- Example: `println!("cargo:rustc-link-search={}", out_dir)` adds linker paths
+### 5. Pin Configuration (`into_push_pull_output()`)
 
-**5. When Build Scripts Run:**
-- **Every clean build**: All build scripts execute
-- **Incremental builds**: Only if dependencies change or build script source changes
-- **Cross-compilation**: Build scripts always run on host, regardless of target architecture
+When you call this on LED pins:
+- **Direction**: Configures the pin as an output (can drive voltage)
+- **Drive Mode**: Sets up push-pull (can drive both HIGH and LOW)
+- **Initial State**: Sets the starting voltage level
 
-This mechanism enables the nRF52833-HAL to generate `memory.x` during compilation without requiring manual intervention.
+The timer provides precise delays:
+- Takes ownership of the hardware timer (prevents conflicts)
+- `delay_ms(100)` uses the hardware timer for accurate timing
+- Much more precise than software loops
 
-#### Memory Layout Generation (`cortex-m-rt` + `nrf52833-hal`)
-- **The nRF52833-HAL build script** automatically generates the `memory.x` linker script during compilation:
-  - **Location**: `target/thumbv7em-none-eabihf/debug/build/nrf52833-hal-*/out/memory.x`
-  - **Contents**: nRF52833's exact memory layout (512KB Flash at 0x00000000, 128KB RAM at 0x20000000)
-- **The nRF52833-PAC build script** generates `device.x` with interrupt vector definitions
-- **cortex-m-rt** automatically finds and uses these generated files during linking
-- Sets up proper memory sections (.text, .data, .bss, .rodata) for embedded systems
-
-**Generated Memory Layout:**
-```linker
-/* Linker script for the nRF52 - WITHOUT SOFT DEVICE */
-MEMORY
-{
-  FLASH : ORIGIN = 0x00000000, LENGTH = 512K
-  RAM : ORIGIN = 0x20000000, LENGTH = 128K
-}
-```
-
-#### Hardware Abstraction Compilation (`microbit-v2`, `nrf52833-hal`)
-- Your high-level `set_high()` calls compile to single ARM assembly instructions like `str r1, [r0]` (store register to memory)
-- GPIO pin abstractions become direct register addresses (e.g., `0x50000000` for GPIO peripheral)
-- Type safety checks happen at compile time - impossible to accidentally use wrong pin types
-
-#### Cross-Compilation Coordination
-- Configures the Rust compiler for `thumbv7em-none-eabihf` (ARM Cortex-M4F with hardware float)
-- Links against newlib-nano for minimal C library functions
-- Strips out all standard library dependencies that assume an operating system
-- Optimizes for code size (embedded systems have limited flash memory)
-
-#### Link-Time Optimization
-- Dead code elimination removes unused functions (even from the HAL crates)
-- Inlines small functions for maximum performance
-- Resolves all hardware register addresses to compile-time constants
-- Creates a single, self-contained binary with no external dependencies
-
-### 2. Before Your `main()` Function Runs (`cortex-m-rt` crate)
-- Sets up the ARM Cortex-M4 processor after power on
-- Initializes the stack pointer and memory layout
-- Copies initial data from flash to RAM
-- Zeros out uninitialized memory sections
-- Calls your `main()` function with everything ready
-
-### 3. Board Initialization (`microbit::Board::take()`)
-- **Clock System**: Configures the nRF52833's complex clock tree (high-frequency, low-frequency, and peripheral clocks)
-- **Power Management**: Sets up voltage regulators and power domains
-- **GPIO Configuration**: Maps the physical pins to their micro:bit functions (LED matrix, buttons, etc.)
-- **Hardware Verification**: Ensures the chip is the expected nRF52833 variant
-- **Resource Management**: Creates a singleton to prevent multiple access to hardware
-
-### 4. Pin Configuration (`into_push_pull_output()`)
-- **Multiplexer Setup**: Configures the pin to be a GPIO (not UART, SPI, etc.)
-- **Direction Setting**: Programs the GPIO direction register for output
-- **Drive Strength**: Sets electrical characteristics (how much current the pin can supply)
-- **Initial State**: Sets the pin to the specified starting voltage level
-- **Safety Checks**: Ensures the pin isn't already in use elsewhere
-
-### 5. Timer Initialization (`let mut timer0 = timer::Timer::new(board.TIMER0)`)
-
-#### Code Breakdown:
-```rust
-let mut timer0 = timer::Timer::new(board.TIMER0);
-//  ↑    ↑        ↑                 ↑
-//  │    │        │                 └─ Hardware peripheral (nRF52833 TIMER0)
-//  │    │        └─ HAL constructor function
-//  │    └─ Variable name (mutable because timer state changes)
-//  └─ Let binding (creates owned timer instance)
-```
-
-#### What `board.TIMER0` Actually Is:
-```rust
-// board.TIMER0 is type: nrf52833_pac::TIMER0
-pub struct TIMER0 {
-    _marker: PhantomData<*const ()>,  // Zero-size type marker
-}
-
-impl TIMER0 {
-    // This gives access to hardware registers at memory address 0x40008000
-    pub fn ptr() -> *const RegisterBlock {
-        0x40008000 as *const _  // ← Actual nRF52833 TIMER0 base address
-    }
-}
-```
-
-#### What `timer::Timer::new()` Does:
-```rust
-// Inside nrf52833-hal crate:
-impl Timer<TIMER0> {
-    pub fn new(timer: TIMER0) -> Self {
-        // Takes ownership of the TIMER0 peripheral - can't be used elsewhere!
-        let timer_registers = unsafe { &*TIMER0::ptr() };
-        
-        // Hardware configuration at register level:
-        timer_registers.mode.write(|w| w.mode().timer());     // Set to timer mode
-        timer_registers.bitmode.write(|w| w.bitmode()._32bit()); // 32-bit mode
-        timer_registers.prescaler.write(|w| unsafe { w.prescaler().bits(4) }); // 16MHz → 1MHz
-        
-        // Clear any previous state
-        timer_registers.tasks_clear.write(|w| unsafe { w.bits(1) });
-        timer_registers.tasks_stop.write(|w| unsafe { w.bits(1) });
-        
-        Timer {
-            timer,           // Store the peripheral
-            _phantom: PhantomData,
-        }
-    }
-}
-```
-
-#### The Hardware Registers Being Configured:
-```rust
-// nRF52833 TIMER0 register map (memory addresses):
-// 0x40008000: TASKS_START    - Start timer task
-// 0x40008004: TASKS_STOP     - Stop timer task  
-// 0x40008008: TASKS_COUNT    - Increment timer task
-// 0x4000800C: TASKS_CLEAR    - Clear timer task
-// 0x40008100: EVENTS_COMPARE - Timer compare event
-// 0x40008504: MODE           - Timer/Counter mode register
-// 0x40008508: BITMODE        - Timer bit width (16/24/32-bit)
-// 0x40008510: PRESCALER      - Clock prescaler (divides 16MHz base clock)
-// 0x40008540: CC[0]          - Compare/Capture register 0
-
-// The initialization writes specific bit patterns to configure:
-timer_registers.prescaler.write(|w| unsafe { w.prescaler().bits(4) });
-// This sets prescaler to 4, giving us: 16MHz ÷ 2^4 = 1MHz timer clock
-```
-
-#### Ownership and Type Safety:
-```rust
-// After Timer::new(), the TIMER0 peripheral is "consumed":
-let timer0 = timer::Timer::new(board.TIMER0);
-// let another_timer = timer::Timer::new(board.TIMER0); // ← COMPILE ERROR!
-// ERROR: use of moved value: `board.TIMER0`
-
-// The HAL Timer wrapper provides safe methods:
-timer0.delay_ms(100);  // ← This compiles to register operations
-// vs unsafe direct access:
-// (*TIMER0::ptr()).cc[0].write(|w| unsafe { w.cc().bits(100_000) }); // Dangerous!
-```
-
-#### Why This Design Is Powerful:
-- **Zero-cost**: Timer wrapper has no runtime overhead
-- **Type-safe**: Can't accidentally reuse the same timer hardware  
-- **Hardware-optimal**: Direct register access with safety guarantees
-- **Trait-based**: Implements `embedded-hal` DelayNs for portability
-
-### 6. Runtime Operations (Every `set_high()`, `delay_ms()` call)
-- **GPIO Control**: Direct register writes to toggle pin voltage instantly
-- **Timer Operations**: Hardware-based delays with microsecond precision
-- **No OS Overhead**: Direct hardware access with zero operating system latency
-
----
-
-## How The HAL Crates Make This Possible
+## The Power of HAL Crates
 
 **Without these crates**, you'd need to:
 - Read the 400+ page nRF52833 reference manual
 - Write hundreds of lines of register manipulation code  
-- Debug timing issues and hardware conflicts with expensive equipment
 - Handle ARM assembly startup code and linker scripts manually
 
-**The Result**: The simple `board.display_pins.row1.set_high()` call compiles to just 2-3 ARM assembly instructions that directly manipulate hardware bits, while maintaining safe, high-level Rust code that is verified at compile time.
+**With HAL crates**: The simple `board.display_pins.row1.set_high()` compiles to just 2-3 ARM assembly instructions while maintaining safe, high-level Rust code.
 
-## The HAL Ecosystem Layers
+## The Crate Ecosystem
 
-Embedded Rust strongly encourages the use of HAL (Hardware Abstraction Layer) crates, which provide a layered architecture for safe, portable hardware access:
+This example uses several crates working together:
 
-### 1. embedded-hal (Universal Traits - Interfaces Only)
-```rust
-use embedded_hal::{delay::DelayNs, digital::OutputPin};
-```
-- **Purpose**: Defines standard interfaces that work across different microcontrollers
-- **What it provides**: **Only trait definitions** like `DelayNs`, `OutputPin`, `SpiDevice` - **no actual implementation**
-- **Think of it as**: A contract that says "delay functions should look like this" but doesn't provide the actual delay code
-- **Benefit**: Write code once, run on any chip that implements these traits
+### Key Dependencies
 
-### 2. microbit-v2 (Board Support Package + Chip HAL)
-```rust
-use microbit::hal::{gpio, timer};        // ← nRF52833 HAL re-exported
-let board = microbit::Board::take().unwrap();  // ← Board-specific configuration
-```
-- **Exposes**: Complete nRF52833 chip functionality mapped to micro:bit v2 board layout
-- **How it works**: Internally uses `nrf52833-hal` for chip-specific implementations and adds micro:bit board configuration
-- **What you get**: 
-  - `microbit::hal` - All nRF52833 peripherals (GPIO, timers, SPI, etc.) implementing `embedded-hal` traits
-  - `microbit::Board` - Pre-configured pin assignments, LED matrix mapping, button setup
-- **Key insight**: You never import `nrf52833-hal` directly - everything comes through the microbit crate
+**`microbit-v2`**: Board support for the micro:bit v2
+- Provides `Board::take()` for easy hardware access
+- Pre-configures all the pins for micro:bit layout
+- Includes the nRF52833 HAL functionality
 
-#### How the Re-export Works:
-```rust
-// Inside microbit-v2 crate source code:
-pub use nrf52833_hal as hal;  // ← Makes nRF HAL available as microbit::hal
+**`cortex-m-rt`**: ARM Cortex-M runtime
+- Handles processor startup sequence
+- Sets up memory layout and stack
+- Calls your `main()` function
 
-// Your imports:
-use microbit::hal::{gpio, timer};        // ← Gets nrf52833_hal functionality
-let board = microbit::Board::take();     // ← Gets board-specific pin mappings
+**`panic-halt`**: What happens on errors
+- Defines what to do if the program panics
+- Simply halts execution (good for beginners)
 
-// You get both chip-level control AND board-level convenience in one crate!
-```
+## What Happens During Runtime
 
-#### What `Board::take()` Actually Does:
-```rust
-// Inside microbit-v2 source code:
-pub fn take() -> Option<Self> {
-    Some(Self::new(
-        pac::Peripherals::take()?,      // ← Claims ALL nRF52833 peripherals (singleton pattern)
-        pac::CorePeripherals::take()?,  // ← Claims ARM Cortex-M core peripherals
-    ))
-}
-```
+When your program runs:
 
-## Digging Into The `take()` Chain
+1. **Hardware Startup**: The `cortex-m-rt` crate sets up the ARM processor
+2. **Board Initialization**: `Board::take()` claims exclusive access to hardware
+3. **LED Loop**: Your code runs in the infinite `loop`
+   - `row1.set_high()` → GPIO register write (turns on voltage)
+   - `col1.set_low()` → GPIO register write (creates current path)  
+   - `delay_ms(100)` → Hardware timer provides precise 100ms delay
+   - Reverse the voltages to turn LED off
+   - Repeat forever
 
-### 1. `pac::Peripherals::take()` - The nRF52833 Chip Level:
-```rust
-// Inside nrf52833-pac crate (auto-generated from chip specification):
-static mut DEVICE_PERIPHERALS: bool = false;  // ← THE SINGLETON GLOBAL VARIABLE
+## Assembly Code Generation
 
-pub fn take() -> Option<Self> {
-    cortex_m::interrupt::free(|_| {  // Critical section - interrupts disabled
-        if unsafe { DEVICE_PERIPHERALS } {
-            None  // Already taken!
-        } else {
-            unsafe { DEVICE_PERIPHERALS = true; }  // Mark as claimed
-            Some(Peripherals {
-                TIMER0: TIMER0 { _marker: PhantomData },  // Your hardware timer
-                TIMER1: TIMER1 { _marker: PhantomData },  // 4 more timers available
-                P0: P0 { _marker: PhantomData },          // GPIO Port 0 (32 pins)
-                P1: P1 { _marker: PhantomData },          // GPIO Port 1 (16 pins)
-                GPIOTE: GPIOTE { _marker: PhantomData },  // GPIO interrupt controller
-                RADIO: RADIO { _marker: PhantomData },    // 2.4GHz radio (Bluetooth)
-                TEMP: TEMP { _marker: PhantomData },      // Temperature sensor
-                RNG: RNG { _marker: PhantomData },        // Random number generator
-                ADC: SAADC { _marker: PhantomData },      // Analog-to-digital converter
-                // ... 40+ more peripherals
-            })
-        }
-    })
-}
-```
-
-### The Global Variable Singleton Implementation
-
-#### `static mut DEVICE_PERIPHERALS: bool = false` Breakdown:
-- **`static`**: Stored in global memory, exists for the entire program lifetime
-- **`mut`**: Mutable - can be changed from `false` to `true`  
-- **`bool = false`**: Initially `false` (peripherals available), becomes `true` (peripherals taken)
-- **Memory location**: Fixed address in RAM, typically around `0x20000000 + offset`
-- **Size**: Just 1 byte - extremely efficient singleton tracking
-
-#### Why `static mut` Is Dangerous (But Controlled Here):
-```rust
-// This would be unsafe in normal Rust:
-static mut COUNTER: i32 = 0;
-fn increment() {
-    unsafe { COUNTER += 1; }  // Race condition possible!
-}
-
-// But PAC makes it safe with critical sections:
-cortex_m::interrupt::free(|_| {  // Disables ALL interrupts
-    unsafe { DEVICE_PERIPHERALS = true; }  // Atomic operation guaranteed
-});
-```
-
-#### Memory Layout of Singleton Variables:
-```rust
-// These live somewhere in RAM (exact addresses determined by linker):
-// Variable               | Size  | Purpose
-// DEVICE_PERIPHERALS     | 1 byte| nRF52833 peripherals available?
-// CORE_PERIPHERALS       | 1 byte| ARM core peripherals available?
-
-// The linker places these in the .bss section of RAM
-// (exact addresses depend on other static variables and linker script)
-
-// After first Board::take():
-// DEVICE_PERIPHERALS     = true   // nRF52833 peripherals CLAIMED
-// CORE_PERIPHERALS       = true   // ARM core peripherals CLAIMED
-```
-
-#### What This Hardware Claiming Prevents:
-```rust
-// Without singleton pattern (dangerous):
-let timer1 = unsafe { &*TIMER0::ptr() };  // Direct memory access
-let timer2 = unsafe { &*TIMER0::ptr() };  // Same timer, different variable!
-timer1.start();
-timer2.stop();  // Conflicts with timer1! Hardware chaos!
-
-// With singleton pattern (safe):
-let peripherals1 = Peripherals::take().unwrap();  // Gets hardware
-let peripherals2 = Peripherals::take();           // Returns None - prevented!
-```
-
-#### The Singleton Pattern in Action:
-- **First call**: `Board::take()` returns `Some(Board)` with exclusive hardware access
-- **Second call**: `Board::take()` returns `None` - hardware already claimed!
-- **Why this matters**: Prevents multiple parts of code from interfering with the same hardware
-- **Runtime cost**: Just a boolean check - zero performance overhead
-
----
-
-## Understanding PhantomData: Zero-Cost Type Safety
-
-You've probably noticed `PhantomData` throughout the embedded code. This is a crucial Rust concept that deserves explanation:
-
-### What is PhantomData?
-
-`PhantomData` is a zero-sized type marker that tells the Rust compiler about type relationships that don't exist at runtime but matter for type safety:
+Your high-level Rust code compiles to efficient ARM assembly:
 
 ```rust
-use std::marker::PhantomData;
-
-// Without PhantomData - this won't compile:
-pub struct Timer<T> {
-    // ERROR: unused type parameter `T`
-}
-
-// With PhantomData - this compiles and uses zero memory:
-pub struct Timer<T> {
-    _marker: PhantomData<T>,  // ← Tells Rust we "use" the T type
-}
+row1.set_high();  // Becomes just 2-3 ARM instructions:
 ```
 
-### Why Embedded Rust Uses PhantomData Extensively
-
-#### 1. Type Safety Without Memory Cost
-```rust
-let timer0 = Timer::<TIMER0>::new();   // Type: Timer<TIMER0>
-let timer1 = Timer::<TIMER1>::new();   // Type: Timer<TIMER1>
-
-// These are different types at compile time:
-fn use_timer0(t: Timer<TIMER0>) { /* ... */ }
-// use_timer0(timer1);  // ← COMPILE ERROR! Type mismatch!
-
-// But at runtime, both are identical (zero-size):
-assert_eq!(std::mem::size_of::<Timer<TIMER0>>(), 0);
-assert_eq!(std::mem::size_of::<Timer<TIMER1>>(), 0);
+```assembly
+mov r0, #0x50000000    ; GPIO P0 base address
+mov r1, #0x200000      ; Pin 21 bit mask (1 << 21)  
+str r1, [r0, #0x508]   ; Write to OUTSET register
 ```
 
-#### 2. Hardware Resource Tracking
-```rust
-// Each peripheral type prevents mix-ups:
-impl Timer<TIMER0> {
-    fn ptr() -> *const RegisterBlock { 0x40008000 as *const _ }
-}
-impl Timer<TIMER1> {
-    fn ptr() -> *const RegisterBlock { 0x40009000 as *const _ }
-}
-
-// PhantomData ensures you can't accidentally use wrong address
-let timer0_wrapper = Timer::<TIMER0>::new();
-// timer0_wrapper internally "knows" it's for TIMER0 hardware at 0x40008000
-```
-
-#### 3. Memory Layout Analysis
-```rust
-// The hardware peripheral structs:
-struct TIMER0 { _marker: PhantomData<*const ()> }    // 0 bytes
-struct TIMER1 { _marker: PhantomData<*const ()> }    // 0 bytes  
-struct GPIO0  { _marker: PhantomData<*const ()> }    // 0 bytes
-
-// A struct containing 40+ peripherals:
-struct Peripherals {
-    timer0: TIMER0,  // 0 bytes
-    timer1: TIMER1,  // 0 bytes  
-    gpio0: GPIO0,    // 0 bytes
-    // ... 37 more peripherals, each 0 bytes
-}
-// Total size: 0 bytes! Pure type information.
-```
-
-#### 4. The Magic: Compile-Time Safety, Zero Runtime Cost
-```rust
-// What the programmer writes:
-let mut timer = Timer::new(board.TIMER0);
-timer.start();
-
-// What the compiler generates (simplified assembly):
-// mov r0, #0x40008000    ; Load TIMER0 base address  
-// mov r1, #1             ; Load "start" value
-// str r1, [r0, #0]       ; Write to TASKS_START register
-// 
-// No PhantomData overhead - it completely disappears!
-```
-
-### PhantomData In Action Throughout The Codebase
-- **PAC peripherals**: `TIMER0 { _marker: PhantomData }` - tracks which hardware
-- **HAL wrappers**: `Timer<T> { _marker: PhantomData<T> }` - prevents type confusion  
-- **Pin types**: `Pin<P0_21> { _marker: PhantomData }` - prevents pin mix-ups
-- **State tracking**: Different types for different hardware states (input vs output pins)
-
-**The Result**: This provides compile-time guarantees for correct hardware usage with zero runtime memory or performance overhead.
-
----
-
-## Board Pre-configuration
-
-**What Gets Pre-configured:**
-```rust
-// Inside Board::new() - configures 40+ pins and peripherals:
-display_pins: DisplayPins {
-    row1: p0_21.into_push_pull_output(Level::Low),  // ← Your LED row
-    col1: p0_28.into_push_pull_output(Level::High), // ← Your LED column
-    // ... all 25 LEDs pre-configured
-},
-buttons: Buttons {
-    button_a: p0_14.into_floating_input(), // ← Left button ready
-    button_b: p0_23.into_floating_input(), // ← Right button ready
-},
-TIMER0: p.TIMER0,  // ← Hardware timer ready for your use
-// ... plus 30+ other peripherals
-```
-
-## Why This Layered Approach Works
-
-- **Portability**: Your `timer0.delay_ms(100)` works identically on ESP32, STM32, or nRF chips
-- **Safety**: Compile-time prevention of hardware conflicts (can't use same pin twice)
-- **Performance**: Zero-cost abstractions - high-level code compiles to optimal assembly
-- **Maintainability**: Hardware details abstracted away, focus on application logic
-
-**The Trade-off**: More dependencies vs. raw register access, but you gain massive productivity and safety benefits while maintaining performance.
+This is incredibly efficient for such high-level, safe Rust code!
 
 ## Assembly Code Generation
 
@@ -515,12 +143,20 @@ str r1, [r0, #0x508]   ; Write to OUTSET register (P0_BASE + 0x508)
 
 This is just 3 ARM instructions - incredibly efficient for such high-level Rust code!
 
-## Related Examples
+## Why This Example Uses High-Level Crates
 
-> **🔬 Want to See the Low-Level Details?** Check out [Example 02](../example_02_hello_world_minimal_dependencies/) which shows the same LED blinking functionality but using as few dependencies as possible and direct register manipulation. You'll see exactly what this high-level code is doing behind the scenes!
+Example 01 heavily uses the HAL ecosystem, which hides the low-level details. This is intentional:
 
-## Additional Technical Resources
+- **Focus on Learning**: You can focus on Rust concepts without getting lost in hardware registers
+- **Safety**: Compile-time guarantees prevent common embedded programming mistakes
+- **Productivity**: Simple functions like `set_high()` instead of complex register manipulation
 
-- **[deep_dive.md](../deep_dive.md)** - Technical explanation of how Rust becomes running hardware code
-- **[hardware.md](../hardware.md)** - How memory mapping physically works with address buses and internal memory
-- **[nRF52833 Product Specification](https://infocenter.nordicsemi.com/pdf/nRF52833_PS_v1.7.pdf)** - Complete hardware reference (400+ pages)
+## What's Next?
+
+> **🔬 Want to See the Low-Level Details?** [Example 02](../example_02_hello_world_minimal_dependencies/) shows the same LED blinking functionality but with fewer dependencies and more direct hardware control. You'll see exactly what these high-level abstractions are doing behind the scenes!
+
+## Additional Resources
+
+- **[deep_dive.md](../deep_dive.md)** - Complete technical explanation of the compilation process and embedded Rust ecosystem
+- **[hardware.md](../hardware.md)** - How memory mapping and address buses work
+- **[nRF52833 Product Specification](https://infocenter.nordicsemi.com/pdf/nRF52833_PS_v1.7.pdf)** - Complete hardware reference

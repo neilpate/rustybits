@@ -16,7 +16,7 @@ fn main() -> ! {
     let mut timer0 = timer::Timer::new(board.TIMER0);
 
     loop {
-        timer0.delay_ms(100);
+        timer0.delay_ms(300);
         row1.set_high().unwrap();
         timer0.delay_ms(100);
         row1.set_low().unwrap();
