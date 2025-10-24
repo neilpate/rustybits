@@ -71,13 +71,7 @@ Essential crates for embedded development:
 - **`microbit-v2`**: Board Support Package (BSP) for BBC micro:bit v2
 - **`nrf52833-hal`**: Hardware Abstraction Layer for nRF52833 chip (included via microbit-v2)
 
-#### Version Specifications
-Cargo uses [semantic versioning](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#specifying-dependencies-from-cratesio) for dependency management:
 
-- **`"0.7"`**: Compatible with 0.7.x (allows 0.7.0, 0.7.1, etc., but not 0.8.0)
-- **`"0.13.0"`**: Exact version specification
-- **`"^0.7"`**: Explicit caret requirement (same as "0.7")
-- **`"~0.7.1"`**: Tilde requirement (allows 0.7.1, 0.7.2, but not 0.7.0 or 0.8.0)
 
 #### Binary Naming Convention
 All examples use `name = "main"` to ensure consistent binary naming:
@@ -134,28 +128,19 @@ The journey from Rust source to running embedded code involves several critical 
 
 ### Step 1: Cross-Compilation
 
-The Rust compiler performs cross-compilation targeting the `thumbv7em-none-eabihf` architecture specification. However, before compiling each crate, Cargo first handles any build scripts for that crate:
+The Rust compiler performs cross-compilation targeting the `thumbv7em-none-eabihf` architecture specification. A critical part of this process involves **build scripts** that automatically generate hardware-specific configuration files during compilation.
 
 ```bash
-# Build process sequence during cargo build:
+# Simplified build process sequence:
 cargo build
-├── For each dependency in dependency order:
-│   ├── 1a. Compile build script (if present) → build-script-build.exe
-│   ├── 1b. Execute build script → generates files (memory.x, device.x, etc.)
-│   └── 1c. Compile the crate → .rlib
-├── Finally compile main crate:
-│   └── 2. Compile main.rs → main binary
+├── For each dependency: Compile build script → Execute → Compile crate
+├── Generated files: memory.x (memory layout), device.x (interrupts)
+└── Compile main crate with generated configuration
 ```
 
-**Build Script Integration**: Build scripts execute during the compilation of their respective crates, not as a separate preliminary phase. When Cargo compiles `nrf52833-hal`, it first runs the HAL's build script to generate `memory.x`, then compiles the HAL code itself.
+**Key Insight**: Build scripts execute on your development machine (x86_64) while generating configuration for the target hardware (ARM). This enables automatic hardware configuration without manual intervention.
 
-**Critical Design Pattern**: Build scripts execute on the development host architecture (x86_64) while generating configuration artifacts for the target architecture (ARM). This cross-compilation approach enables automatic hardware-specific configuration without requiring manual intervention.
-
-**Generated Artifact Locations**:
-- `target/debug/build/nrf52833-hal-*/out/memory.x` - nRF52833 memory layout specification
-- `target/debug/build/nrf52833-pac-*/out/device.x` - Interrupt vector table definitions
-
-This automated generation mechanism explains the seamless operation of embedded Rust projects without requiring manual `memory.x` file creation - the Hardware Abstraction Layer generates these files programmatically during the build process.
+> **Deep Dive**: For comprehensive details about build script mechanics, execution order, and output directories, see the [Build Scripts section](#how-build-scripts-work-in-embedded-rust) in Advanced Concepts.
 
 **Target Architecture Components**:
 - **`thumbv7em`**: ARMv7E-M instruction set architecture (Cortex-M4/M7 with DSP extensions)
@@ -186,21 +171,6 @@ MEMORY
   /* nRF52833 memory layout */
   FLASH : ORIGIN = 0x00000000, LENGTH = 512K
   RAM   : ORIGIN = 0x20000000, LENGTH = 128K
-}
-```
-
-### Runtime Components
-The `cortex-m-rt` crate provides:
-
-```rust
-// Startup sequence (simplified)
-#[no_mangle]
-pub unsafe extern "C" fn Reset() {
-    // 1. Initialize RAM
-    // 2. Set up stack pointer
-    // 3. Copy .data section from flash to RAM
-    // 4. Zero .bss section
-    // 5. Call main()
 }
 ```
 
@@ -247,7 +217,7 @@ Flash: Non-volatile storage      RAM: Fast volatile memory
 
 ### Power-On Startup Sequence
 
-When the nRF52833 microcontroller powers on, here's exactly what happens:
+The nRF52833 microcontroller follows a precise startup sequence upon power initialization:
 
 #### 1. Hardware Reset
 - **Power-on Reset (POR)**: CPU starts in a known state with all registers zeroed
@@ -273,7 +243,7 @@ This is why the vector table **must** be at the very start of flash - the CPU ha
 #### 4. Jump to Reset Handler
 - CPU loads the reset handler address from `0x00000004`
 - Jumps to that address (usually `cortex-m-rt`'s `Reset()` function)
-- **Your code hasn't run yet** - this is still initialization!
+- **Application code remains inactive** - the system continues hardware initialization
 
 #### 5. Runtime Initialization (cortex-m-rt)
 The reset handler is provided by the `cortex-m-rt` crate and performs critical setup:
@@ -315,8 +285,8 @@ pub unsafe extern "C" fn Reset() -> ! {
     #[cfg(feature = "device")]
     __pre_init();
 
-    // Finally, call your main() function!
-    main();  // ← YOUR CODE STARTS HERE
+    // Transfer control to application entry point
+    main();  // ← APPLICATION CODE EXECUTION BEGINS
 }
 ```
 
@@ -325,8 +295,8 @@ pub unsafe extern "C" fn Reset() -> ! {
 - **When it's linked**: Automatically included when you add `cortex-m-rt` as a dependency
 - **How it's used**: The `#[entry]` macro on your `main()` ensures this reset handler calls your code
 
-#### 6. Your Code Begins
-Only after all this initialization does `main()` get called and your Rust code starts executing.
+#### 6. Application Execution Commences
+Only after complete system initialization does `main()` receive control and application code begins execution.
 
 ### How the Reset Code Gets Into Your Binary
 
@@ -351,17 +321,17 @@ fn main() -> ! {
 
 The `#[entry]` macro (from `cortex-m-rt`) transforms your code:
 - **Renames** your `main()` function internally (to avoid conflicts)
-- **Creates** a proper reset handler that calls your renamed main
-- **Sets up** the vector table to point to this reset handler
+- **Generates** a proper reset handler that invokes the renamed main function
+- **Configures** the vector table to reference this reset handler
 - **Ensures** proper function signatures for embedded entry points
 
 #### 3. Automatic Linking Process
 When you run `cargo build`, the linker automatically:
 
-1. **Compiles your code** → `main.o` (contains your LED logic)
+1. **Compiles application code** → `main.o` (contains application logic)
 2. **Compiles cortex-m-rt** → `cortex_m_rt.o` (contains reset handler)
-3. **Links them together** using linker scripts from cortex-m-rt
-4. **Places everything** at the correct memory addresses
+3. **Links components** using linker scripts from cortex-m-rt
+4. **Positions code sections** at designated memory addresses
 
 #### 4. What Gets Linked Into Your Binary
 Your final ELF file contains code from multiple sources:
@@ -492,78 +462,7 @@ This is different from external debug probes (J-Link, ST-Link) where the probe i
 3. **Target discovery**: Interface chip scans for connected nRF52833 via SWD
 4. **Debug session**: Establishes communication channel to target processor
 
-
-### Flash Memory Layout After Programming
-```
-nRF52833 Flash (512KB):
-0x00000000: ┌─ Vector Table ────────────┐
-0x00000100: ├─ Reset Handler ──────────┤  
-0x00000200: ├─ Main Program Code ──────┤
-0x00002000: ├─ Constant Data ──────────┤
-0x00002100: ├─ Initial RAM Values ─────┤
-0x00002200: ├─ (unused) ───────────────┤
-            │                          │
-0x0007FFFF: └──────────────────────────┘
-```
-
-## Debug Interface Details
-
-### SWD (Serial Wire Debug) Protocol
-
-SWD is ARM's proprietary debugging protocol, designed as a more efficient alternative to JTAG for ARM Cortex-M processors.
-
-#### Physical Interface
-- **SWCLK**: Serial Wire Clock - provides timing for data transfers
-- **SWDIO**: Serial Wire Data I/O - bidirectional data line
-- **Ground**: Common reference
-- **VCC**: Power reference (3.3V on micro:bit)
-
-#### Protocol Stack
-```
-Application (probe-rs) 
-       ↕
-Debug Port (DP) - Controls the debug interface
-       ↕  
-Access Port (AP) - Provides memory access
-       ↕
-Target Memory Bus - CPU's internal buses
-```
-
-#### How SWD Works
-
-
-#### Debug Features Enabled by SWD
-- **Flash Programming**: Direct write access to flash memory controllers
-- **Memory Inspection**: Read any RAM/peripheral register in real-time
-- **CPU Control**: Halt, reset, single-step execution
-- **Breakpoints**: Set hardware breakpoints (nRF52833 has 6 hardware breakpoints)
-- **Watchpoints**: Monitor memory locations for read/write access
-- **Real-time Trace**: Extract execution trace data (if supported by target)
-
-#### SWD vs JTAG
-SWD is ARM's more efficient alternative to JTAG, using only 2 pins instead of 4 and offering higher speeds with a simpler protocol specifically designed for ARM Cortex-M processors.
-
-#### Security and SWD
-Modern ARM processors (including nRF52833) support:
-- **Debug Authentication**: Cryptographic authentication before debug access
-- **Secure Debug**: Different privilege levels for debug access  
-- **Access Port Protection**: Fine-grained control over memory regions
-- **Debug Disable**: Complete disabling of debug interface for production
-
-### probe-rs Capabilities
-```bash
-# List connected probes
-probe-rs list
-
-# Flash and run
-probe-rs run --chip nRF52833_xxAA target.elf
-
-# Interactive debugging
-probe-rs gdb --chip nRF52833_xxAA target.elf
-
-# Real-time tracing (if supported)
-probe-rs rtt --chip nRF52833_xxAA target.elf
-```
+> **Note**: For detailed information about SWD protocol mechanics, debug interface capabilities, and advanced debugging techniques, see the debugging reference documentation.
 
 ## Performance Considerations
 
@@ -576,11 +475,6 @@ lto = true          # Link-time optimization
 codegen-units = 1   # Single codegen unit for better optimization
 panic = "abort"     # Smaller panic handler
 ```
-
-### Memory Usage
-- **Flash**: Typically 4-20KB for simple examples
-- **RAM**: Static allocation preferred (no heap allocator)
-- **Stack**: Usually 2-8KB depending on recursion depth
 
 ## The Embedded Rust Ecosystem
 
@@ -599,26 +493,19 @@ Behind the simple Rust code are hundreds of lines of:
 - **Interrupt vectors**: Hardware interrupt handling and vector tables
 - **Clock configuration**: Setting up the chip's various clock sources and frequencies
 
-### Memory Layout
-The project uses auto-generated memory layout from the `microbit-v2` crate, which provides:
-- Flash memory mapping for the nRF52833 (typically starts at 0x00000000)
-- RAM allocation compatible with the micro:bit v2 (typically starts at 0x20000000) 
-- Stack and heap configuration for the Cortex-M4 processor
-- Bootloader compatibility (leaves space for the micro:bit's built-in bootloader)
-
 This layered approach allows you to write high-level, safe Rust code while the ecosystem handles the embedded systems complexity underneath.
 
 ## Advanced Embedded Rust Concepts
 
 ### How Build Scripts Work in Embedded Rust
 
-When you run `cargo build`, Rust executes build scripts in dependency order **before** compiling the main crate. This is crucial for embedded development where hardware-specific files need to be generated.
+Cargo's build script system enables automatic generation of hardware-specific configuration files during compilation. This section examines the detailed mechanics of this process.
 
 #### Build Script Discovery and Execution
 **1. Build Script Discovery:**
-- Cargo scans all dependencies for `build.rs` files
-- Both nRF52833-PAC and nRF52833-HAL have `build.rs` files that get detected automatically
-- Build scripts are compiled as separate binaries first
+- Cargo automatically discovers `build.rs` files in dependency crates
+- The nRF52833-PAC and nRF52833-HAL crates include build scripts for hardware configuration
+- Build scripts compile as separate host-architecture executables
 
 **2. Build Script Execution Order:**
 ```
@@ -657,12 +544,18 @@ cargo build
 - **Cross-compilation**: Build scripts always run on host, regardless of target architecture
 
 #### Memory Layout Generation (`cortex-m-rt` + `nrf52833-hal`)
-- **The nRF52833-HAL build script** automatically generates the `memory.x` linker script during compilation:
-  - **Location**: `target/thumbv7em-none-eabihf/debug/build/nrf52833-hal-*/out/memory.x`
-  - **Contents**: nRF52833's exact memory layout (512KB Flash at 0x00000000, 128KB RAM at 0x20000000)
-- **The nRF52833-PAC build script** generates `device.x` with interrupt vector definitions
-- **cortex-m-rt** automatically finds and uses these generated files during linking
+**The nRF52833-HAL build script** automatically generates the `memory.x` linker script during compilation:
+- **Location**: `target/debug/build/nrf52833-hal-*/out/memory.x` 
+- **Contents**: nRF52833's exact memory layout (512KB Flash at 0x00000000, 128KB RAM at 0x20000000)
+
+**The nRF52833-PAC build script** generates `device.x` with interrupt vector definitions:
+- **Location**: `target/debug/build/nrf52833-pac-*/out/device.x`
+- **Contents**: Complete interrupt vector table for all nRF52833 peripherals
+
+**Integration with cortex-m-rt**:
+- cortex-m-rt automatically finds and uses these generated files during linking
 - Sets up proper memory sections (.text, .data, .bss, .rodata) for embedded systems
+- Explains why embedded Rust projects work seamlessly without manual `memory.x` file creation
 
 **Generated Memory Layout:**
 ```linker
@@ -674,94 +567,53 @@ MEMORY
 }
 ```
 
-### Understanding PhantomData: Zero-Cost Type Safety
+### The HAL Ecosystem Layers
 
-`PhantomData` is crucial throughout embedded Rust code for zero-cost type safety:
+Embedded Rust uses a layered architecture for safe, portable hardware access:
 
-#### What is PhantomData?
-`PhantomData` is a zero-sized type marker that tells the Rust compiler about type relationships that don't exist at runtime but matter for type safety:
-
+#### 1. embedded-hal (Universal Traits - Interfaces Only)
 ```rust
-use std::marker::PhantomData;
+use embedded_hal::{delay::DelayNs, digital::OutputPin};
+```
+- **Purpose**: Defines standard interfaces that work across different microcontrollers
+- **What it provides**: **Only trait definitions** like `DelayNs`, `OutputPin`, `SpiDevice` - **no actual implementation**
+- **Think of it as**: A contract that says "delay functions should look like this" but doesn't provide the actual delay code
+- **Benefit**: Write code once, run on any chip that implements these traits
 
-// Without PhantomData - this won't compile:
-pub struct Timer<T> {
-    // ERROR: unused type parameter `T`
-}
+#### 2. microbit-v2 (Board Support Package + Chip HAL)
+```rust
+use microbit::hal::{gpio, timer};        // ← nRF52833 HAL re-exported
+let board = microbit::Board::take().unwrap();  // ← Board-specific configuration
+```
+- **Exposes**: Complete nRF52833 chip functionality mapped to micro:bit v2 board layout
+- **How it works**: Internally uses `nrf52833-hal` for chip-specific implementations and adds micro:bit board configuration
+- **What you get**: 
+  - `microbit::hal` - All nRF52833 peripherals (GPIO, timers, SPI, etc.) implementing `embedded-hal` traits
+  - `microbit::Board` - Pre-configured pin assignments, LED matrix mapping, button setup
+- **Key insight**: You never import `nrf52833-hal` directly - everything comes through the microbit crate
 
-// With PhantomData - this compiles and uses zero memory:
-pub struct Timer<T> {
-    _marker: PhantomData<T>,  // ← Tells Rust we "use" the T type
-}
+#### How the Re-export Works:
+```rust
+// Inside microbit-v2 crate source code:
+pub use nrf52833_hal as hal;  // ← Makes nRF HAL available as microbit::hal
+
+// Your imports:
+use microbit::hal::{gpio, timer};        // ← Gets nrf52833_hal functionality
+let board = microbit::Board::take();     // ← Gets board-specific pin mappings
+
+// You get both chip-level control AND board-level convenience in one crate!
 ```
 
-#### Why Embedded Rust Uses PhantomData Extensively
-
-**1. Type Safety Without Memory Cost:**
+#### What `Board::take()` Actually Does:
 ```rust
-let timer0 = Timer::<TIMER0>::new();   // Type: Timer<TIMER0>
-let timer1 = Timer::<TIMER1>::new();   // Type: Timer<TIMER1>
-
-// These are different types at compile time:
-fn use_timer0(t: Timer<TIMER0>) { /* ... */ }
-// use_timer0(timer1);  // ← COMPILE ERROR! Type mismatch!
-
-// But at runtime, both are identical (zero-size):
-assert_eq!(std::mem::size_of::<Timer<TIMER0>>(), 0);
-assert_eq!(std::mem::size_of::<Timer<TIMER1>>(), 0);
-```
-
-**2. Hardware Resource Tracking:**
-```rust
-// Each peripheral type prevents mix-ups:
-impl Timer<TIMER0> {
-    fn ptr() -> *const RegisterBlock { 0x40008000 as *const _ }
+// Inside microbit-v2 source code:
+pub fn take() -> Option<Self> {
+    Some(Self::new(
+        pac::Peripherals::take()?,      // ← Claims ALL nRF52833 peripherals (singleton pattern)
+        pac::CorePeripherals::take()?,  // ← Claims ARM Cortex-M core peripherals
+    ))
 }
-impl Timer<TIMER1> {
-    fn ptr() -> *const RegisterBlock { 0x40009000 as *const _ }
-}
-
-// PhantomData ensures you can't accidentally use wrong address
-let timer0_wrapper = Timer::<TIMER0>::new();
-// timer0_wrapper internally "knows" it's for TIMER0 hardware at 0x40008000
 ```
-
-**3. Memory Layout Analysis:**
-```rust
-// The hardware peripheral structs:
-struct TIMER0 { _marker: PhantomData<*const ()> }    // 0 bytes
-struct TIMER1 { _marker: PhantomData<*const ()> }    // 0 bytes  
-struct GPIO0  { _marker: PhantomData<*const ()> }    // 0 bytes
-
-// A struct containing 40+ peripherals:
-struct Peripherals {
-    timer0: TIMER0,  // 0 bytes
-    timer1: TIMER1,  // 0 bytes  
-    gpio0: GPIO0,    // 0 bytes
-    // ... 37 more peripherals, each 0 bytes
-}
-// Total size: 0 bytes! Pure type information.
-```
-
-**4. The Magic: Compile-Time Safety, Zero Runtime Cost:**
-```rust
-// What the programmer writes:
-let mut timer = Timer::new(board.TIMER0);
-timer.start();
-
-// What the compiler generates (simplified assembly):
-// mov r0, #0x40008000    ; Load TIMER0 base address  
-// mov r1, #1             ; Load "start" value
-// str r1, [r0, #0]       ; Write to TASKS_START register
-// 
-// No PhantomData overhead - it completely disappears!
-```
-
-#### PhantomData Throughout The Embedded Ecosystem
-- **PAC peripherals**: `TIMER0 { _marker: PhantomData }` - tracks which hardware
-- **HAL wrappers**: `Timer<T> { _marker: PhantomData<T> }` - prevents type confusion  
-- **Pin types**: `Pin<P0_21> { _marker: PhantomData }` - prevents pin mix-ups
-- **State tracking**: Different types for different hardware states (input vs output pins)
 
 ### The Singleton Pattern in Embedded Systems
 
@@ -853,52 +705,28 @@ let peripherals2 = Peripherals::take();           // Returns None - prevented!
 - **Why this matters**: Prevents multiple parts of code from interfering with the same hardware
 - **Runtime cost**: Just a boolean check - zero performance overhead
 
-### The HAL Ecosystem Layers
+#### Understanding PhantomData in Hardware Types
 
-Embedded Rust uses a layered architecture for safe, portable hardware access:
+You may have noticed `PhantomData` markers in the peripheral structures above. This is a zero-cost Rust pattern used extensively in embedded code:
 
-#### 1. embedded-hal (Universal Traits - Interfaces Only)
 ```rust
-use embedded_hal::{delay::DelayNs, digital::OutputPin};
-```
-- **Purpose**: Defines standard interfaces that work across different microcontrollers
-- **What it provides**: **Only trait definitions** like `DelayNs`, `OutputPin`, `SpiDevice` - **no actual implementation**
-- **Think of it as**: A contract that says "delay functions should look like this" but doesn't provide the actual delay code
-- **Benefit**: Write code once, run on any chip that implements these traits
-
-#### 2. microbit-v2 (Board Support Package + Chip HAL)
-```rust
-use microbit::hal::{gpio, timer};        // ← nRF52833 HAL re-exported
-let board = microbit::Board::take().unwrap();  // ← Board-specific configuration
-```
-- **Exposes**: Complete nRF52833 chip functionality mapped to micro:bit v2 board layout
-- **How it works**: Internally uses `nrf52833-hal` for chip-specific implementations and adds micro:bit board configuration
-- **What you get**: 
-  - `microbit::hal` - All nRF52833 peripherals (GPIO, timers, SPI, etc.) implementing `embedded-hal` traits
-  - `microbit::Board` - Pre-configured pin assignments, LED matrix mapping, button setup
-- **Key insight**: You never import `nrf52833-hal` directly - everything comes through the microbit crate
-
-#### How the Re-export Works:
-```rust
-// Inside microbit-v2 crate source code:
-pub use nrf52833_hal as hal;  // ← Makes nRF HAL available as microbit::hal
-
-// Your imports:
-use microbit::hal::{gpio, timer};        // ← Gets nrf52833_hal functionality
-let board = microbit::Board::take();     // ← Gets board-specific pin mappings
-
-// You get both chip-level control AND board-level convenience in one crate!
+struct TIMER0 { _marker: PhantomData<*const ()> }  // 0 bytes at runtime
+struct TIMER1 { _marker: PhantomData<*const ()> }  // 0 bytes at runtime
 ```
 
-#### What `Board::take()` Actually Does:
+**Purpose**: `PhantomData` allows the type system to track which specific hardware peripheral you're using without any runtime cost:
+
 ```rust
-// Inside microbit-v2 source code:
-pub fn take() -> Option<Self> {
-    Some(Self::new(
-        pac::Peripherals::take()?,      // ← Claims ALL nRF52833 peripherals (singleton pattern)
-        pac::CorePeripherals::take()?,  // ← Claims ARM Cortex-M core peripherals
-    ))
-}
+let timer0 = Timer::<TIMER0>::new();   // Type: Timer<TIMER0>  
+let timer1 = Timer::<TIMER1>::new();   // Type: Timer<TIMER1>
+
+// Compiler prevents mixing them up:
+fn use_timer0(t: Timer<TIMER0>) { /* ... */ }
+// use_timer0(timer1);  // ← COMPILE ERROR! Wrong timer type!
+
+// But both compile to identical assembly - zero runtime overhead
 ```
+
+This pattern ensures type safety (can't mix up TIMER0 vs TIMER1) while maintaining the efficiency required for embedded systems.
 
 This advanced knowledge helps explain why the simple high-level code in the examples works so reliably and safely, despite the complexity of embedded systems programming.

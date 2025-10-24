@@ -284,6 +284,15 @@ impl Led<On> {
 // Compiler prevents calling turn_off() on an already-off LED!
 ```
 
+#### Version Specifications
+Cargo uses [semantic versioning](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#specifying-dependencies-from-cratesio) for dependency management:
+
+- **`"0.7"`**: Compatible with 0.7.x (allows 0.7.0, 0.7.1, etc., but not 0.8.0)
+- **`"0.13.0"`**: Exact version specification
+- **`"^0.7"`**: Explicit caret requirement (same as "0.7")
+- **`"~0.7.1"`**: Tilde requirement (allows 0.7.1, 0.7.2, but not 0.7.0 or 0.8.0)
+
+
 ---
 
 
