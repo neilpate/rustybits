@@ -137,7 +137,22 @@
                 "build"
             ],
             "options": {
-                "cwd": "${workspaceFolder}/example_07_rtt"
+                "cwd": "${workspaceFolder}/example_07_rtt_MCU_to_PC"
+            },
+            "group": "build",
+            "problemMatcher": [
+                "$rustc"
+            ]
+        },
+        {
+            "label": "Build Example 08",
+            "type": "shell",
+            "command": "cargo",
+            "args": [
+                "build"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/example_08_rtt_bidirectional"
             },
             "group": "build",
             "problemMatcher": [

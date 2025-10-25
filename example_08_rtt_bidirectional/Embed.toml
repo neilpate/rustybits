@@ -1,0 +1,36 @@
+[default.general]
+chip = "nrf52833_xxAA" # uncomment this line for micro:bit V2
+
+[default.reset]
+halt_afterwards = false
+
+[default.rtt]
+enabled = true
+
+# Up channels: Output from microcontroller to PC
+# - channel: RTT channel number (must match rtt_init_print!() in Rust code)
+# - name: Descriptive name for this channel
+# - up_mode: Buffer overflow behavior
+#     "NoBlockSkip" - skip new data if buffer full (non-blocking)
+#     "NoBlockTrim" - overwrite oldest data (non-blocking)
+#     "BlockIfFull" - wait until space available (blocking, can hang application)
+# - format: "String" for text, "BinaryLE" for binary data
+up_channels = [
+    { channel = 0, name = "Terminal", up_mode = "NoBlockSkip", format = "String" },
+]
+
+# Down channels: Input from PC to microcontroller
+# - channel: RTT channel number for receiving input
+# - name: Descriptive name
+# - format: "String" for text input
+down_channels = [{ channel = 0, name = "Terminal", format = "String" }]
+
+# Tabs: Link up/down channels together for unified bidirectional terminal interface
+# Creates a single terminal window where you can see output and type input
+tabs = [{ up_channel = 0, down_channel = 0, name = "term" }]
+
+# RTT initialization timeout in milliseconds
+timeout = 3000
+
+[default.gdb]
+enabled = false

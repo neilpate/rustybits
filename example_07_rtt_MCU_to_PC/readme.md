@@ -14,15 +14,25 @@ This program prints timestamped debug messages to your PC terminal at 1-second i
 
 ## Running this example
 
+### Important: Using `cargo embed` for RTT
+
+**Unlike previous examples**, this example requires `cargo embed` instead of `cargo run`.
+
+**Why `cargo embed`?**
+- `cargo run` (via probe-rs) only flashes the binary and exits
+- `cargo embed` flashes the binary **and** opens an interactive RTT terminal
+- The RTT terminal stays connected, displaying output in real-time
+
 ### Quick Start
+
 1. Connect your micro:bit via USB
 2. Open a terminal and run:
 ```bash
-cd example_07_rtt
+cd example_07_rtt_MCU_to_PC
 cargo embed
 ```
 
-The terminal will display timestamped output from your micro:bit:
+3. The terminal will display timestamped output from your micro:bit:
 ```
 21:27:10.723: RTT Example Started!
 21:27:11.723: Count: 0
@@ -31,11 +41,7 @@ The terminal will display timestamped output from your micro:bit:
 ...
 ```
 
-### From VS Code
-1. Open `src/main.rs` in VS Code
-2. Click the ▶️ **Run** button above the `#[entry]` function
-
-> **💡 Need VS Code setup help?** See [vscode_setup.md](../vscode_setup.md)
+Press `Ctrl+C` to exit the RTT terminal.
 
 ## The Code
 
