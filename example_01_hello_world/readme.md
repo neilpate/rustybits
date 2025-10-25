@@ -37,13 +37,15 @@ use panic_halt as _;
 fn main() -> ! {
     let board = microbit::Board::take().unwrap();
 
-    let mut row1 = board.display_pins.row1.into_push_pull_output(gpio::Level::High);
-    let _col1 = board.display_pins.col1.into_push_pull_output(gpio::Level::Low);
+    let mut row1 = board.display_pins.row1;
+
+    let mut col1 = board.display_pins.col1;
+    col1.set_low().unwrap(); // Activate column (active low)
 
     let mut timer0 = timer::Timer::new(board.TIMER0);
 
     loop {
-        timer0.delay_ms(100);
+        timer0.delay_ms(300);
         row1.set_high().unwrap();
         timer0.delay_ms(100);
         row1.set_low().unwrap();

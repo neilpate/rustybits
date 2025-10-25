@@ -56,20 +56,21 @@ Before your `main()` runs, the `cortex-m-rt` crate:
 
 When you call `microbit::Board::take().unwrap()`:
 - **Hardware Detection**: Verifies the nRF52833 chip is present and working
-- **Pin Mapping**: Sets up all GPIO pins with their micro:bit functions
+- **Pin Mapping**: Sets up all GPIO pins with their micro:bit functions (already configured as push-pull outputs)
 - **Clock Setup**: Configures the chip's internal clocks for proper operation
 - **Safety**: Creates a singleton - only one part of your code can control the hardware
 
-### 5. Pin Configuration (`into_push_pull_output()`)
+### 5. Pin Usage and Timer Setup
 
-When you call this on LED pins:
-- **Direction**: Configures the pin as an output (can drive voltage)
-- **Drive Mode**: Sets up push-pull (can drive both HIGH and LOW)
-- **Initial State**: Sets the starting voltage level
+The pins returned from `board.display_pins` are ready to use:
+- Already configured as outputs (can drive voltage)
+- Already set to push-pull mode (can drive both HIGH and LOW)
+- The `embedded_hal::digital::OutputPin` trait provides the `set_high()` and `set_low()` methods
+- You can directly call these methods without further configuration
 
 The timer provides precise delays:
 - Takes ownership of the hardware timer (prevents conflicts)
-- `delay_ms(100)` uses the hardware timer for accurate timing
+- `delay_ms(300)` uses the hardware timer for accurate timing
 - Much more precise than software loops
 
 ## The Power of HAL Crates
@@ -111,7 +112,7 @@ When your program runs:
    - `row1.set_high()` → GPIO register write (turns on voltage)
    - `col1.set_low()` → GPIO register write (creates current path)  
    - `delay_ms(100)` → Hardware timer provides precise 100ms delay
-   - Reverse the voltages to turn LED off
+   - Set the row output low to turn off the LED
    - Repeat forever
 
 ## Assembly Code Generation

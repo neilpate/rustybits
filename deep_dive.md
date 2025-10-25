@@ -620,6 +620,54 @@ pub fn take() -> Option<Self> {
 
 This method ensures exclusive hardware access through the singleton pattern described below.
 
+#### Accessing Board Pins
+
+After acquiring the board with `Board::take()`, you can access pre-configured pins:
+
+```rust
+let board = microbit::Board::take().unwrap();
+let mut row1 = board.display_pins.row1;  // Takes ownership of the pin
+```
+
+**What happens in this line:**
+
+1. **Field Access**: `board.display_pins` returns a structure containing all LED matrix pins
+2. **Move Semantics**: `row1` is **moved** from the `board.display_pins` structure to the new variable
+3. **Ownership Transfer**: The `board.display_pins.row1` field is now uninitialized (moved out)
+4. **Type**: `row1` is a `Pin<Output<PushPull>>` - already configured as an output
+
+**Under the hood:**
+```rust
+// Simplified microbit-v2 Board structure:
+pub struct Board {
+    pub display_pins: DisplayPins,
+    // ... other fields
+}
+
+pub struct DisplayPins {
+    pub row1: Pin<Output<PushPull>>,  // Pre-configured output pin
+    pub col1: Pin<Output<PushPull>>,  // Pre-configured output pin
+    // ... other pins
+}
+```
+
+**Why this design works:**
+
+- **Pre-configuration**: The `Board::new()` constructor already configured these pins as outputs
+- **No allocation**: Moving a pin from the structure to a variable is a zero-cost operation
+- **Type safety**: You can't accidentally use the same pin twice (it's been moved)
+- **Trait implementation**: The pin implements `embedded_hal::digital::OutputPin` trait, providing `set_high()` and `set_low()` methods
+
+**Move semantics in action:**
+```rust
+let board = microbit::Board::take().unwrap();
+let mut row1 = board.display_pins.row1;  // row1 moved out
+// board.display_pins.row1  // ← Compile error: value has been moved
+row1.set_high().unwrap();  // ✓ Works - we own row1
+```
+
+This is standard Rust ownership - the pin can only exist in one place at a time, preventing accidental duplicate access to the same hardware resource.
+
 ### The Singleton Pattern in Embedded Systems
 
 #### Hardware Singleton Implementation
