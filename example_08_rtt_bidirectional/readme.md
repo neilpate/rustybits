@@ -38,12 +38,11 @@ Ready! Type on the host and press ENTER to send to the target. It will then resp
 ```
 
 5. Type text and press ENTER to see the uppercase response:
-```
-hello world
-HELLO WORLD
-test 123
-TEST 123
-```
+
+<img width="913" height="576" alt="image" src="https://github.com/user-attachments/assets/96b00725-22a7-4e30-a35e-6b8b7302d9cf" />
+
+<img width="981" height="579" alt="image" src="https://github.com/user-attachments/assets/44af5779-0af4-4865-9d8c-1457ab287e2c" />
+
 
 Press `Ctrl+C` to exit the RTT terminal.
 
