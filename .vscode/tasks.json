@@ -158,6 +158,21 @@
             "problemMatcher": [
                 "$rustc"
             ]
+        },
+        {
+            "label": "Build Example 09",
+            "type": "shell",
+            "command": "cargo",
+            "args": [
+                "build"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/example_09_onboard_triax"
+            },
+            "group": "build",
+            "problemMatcher": [
+                "$rustc"
+            ]
         }
     ]
 }

@@ -157,6 +157,25 @@
                 }
             ],
             "preLaunchTask": "Build Example 08"
+        },
+        {
+            "type": "probe-rs-debug",
+            "request": "launch",
+            "name": "Debug Example 09",
+            "cwd": "${workspaceFolder}/example_09_onboard_triax",
+            "connectUnderReset": false,
+            "chip": "nRF52833_xxAA",
+            "flashingConfig": {
+                "flashingEnabled": true,
+                "haltAfterReset": false
+            },
+            "coreConfigs": [
+                {
+                    "coreIndex": 0,
+                    "programBinary": "target/thumbv7em-none-eabihf/debug/main"
+                }
+            ],
+            "preLaunchTask": "Build Example 09"
         }
     ]
 }
