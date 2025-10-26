@@ -55,10 +55,10 @@ Before your `main()` runs, the `cortex-m-rt` crate:
 ### 4. Board Initialization (`microbit::Board::take()`)
 
 When you call `microbit::Board::take().unwrap()`:
-- **Hardware Detection**: Verifies the nRF52833 chip is present and working
-- **Pin Mapping**: Sets up all GPIO pins with their micro:bit functions (already configured as push-pull outputs)
-- **Clock Setup**: Configures the chip's internal clocks for proper operation
-- **Safety**: Creates a singleton - only one part of your code can control the hardware
+- **Singleton Pattern**: Returns `Some(Board)` the first time, `None` on subsequent calls - ensures only one part of your code can control the hardware
+- **Pin Mapping**: Provides convenient access to GPIO pins with their micro:bit functions (already configured as push-pull outputs)
+- **Peripheral Access**: Gives you ownership of the hardware peripherals (TIMER0, TWIM0, etc.)
+- **Zero Cost**: All of this is just compile-time organization - no runtime checking happens
 
 ### 5. Pin Usage and Timer Setup
 
@@ -115,21 +115,138 @@ When your program runs:
    - Set the row output low to turn off the LED
    - Repeat forever
 
-## Assembly Code Generation
 
-Your high-level Rust code compiles to efficient ARM assembly:
 
+## How `delay_ms()` Works Through the HAL
+
+When you call `delay.delay_ms(100)`, it uses the hardware timer for precise timing:
+
+### 1. Your Code
 ```rust
-row1.set_high();  // Becomes just 2-3 ARM instructions:
+let mut delay = Delay::new(board.TIMER0);
+delay.delay_ms(100_u32);
 ```
 
-```assembly
-mov r0, #0x50000000    ; GPIO P0 base address
-mov r1, #0x200000      ; Pin 21 bit mask (1 << 21)  
-str r1, [r0, #0x508]   ; Write to OUTSET register
+### 2. The DelayMs Trait (from embedded-hal)
+
+The `embedded_hal::delay::DelayMs` trait defines the interface:
+```rust
+pub trait DelayMs<UXX> {
+    fn delay_ms(&mut self, ms: UXX);
+}
 ```
 
-This is incredibly efficient for such high-level, safe Rust code!
+This trait is generic over the time unit type (u8, u16, u32, etc.), allowing flexibility in delay duration.
+
+### 3. The HAL Implementation (nrf52833-hal)
+
+The `nrf52833-hal` crate implements this trait using the TIMER peripheral:
+```rust
+impl<T: Instance> DelayMs<u32> for Delay<T> {
+    fn delay_ms(&mut self, ms: u32) {
+        // Convert milliseconds to microseconds
+        self.delay_us(ms * 1_000);
+    }
+}
+
+impl<T: Instance> DelayUs<u32> for Delay<T> {
+    fn delay_us(&mut self, us: u32) {
+        // Configure timer for 1 MHz (1 tick per microsecond)
+        self.timer.set_frequency(Frequency::F1MHz);
+        
+        // Set the compare register for the target delay
+        self.timer.cc(0).write(|w| unsafe { w.bits(us) });
+        
+        // Clear the event flag
+        self.timer.events_compare[0].reset();
+        
+        // Start the timer
+        self.timer.tasks_start.write(|w| unsafe { w.bits(1) });
+        
+        // Wait for the compare event (busy-wait)
+        while self.timer.events_compare[0].read().bits() == 0 {}
+        
+        // Stop the timer
+        self.timer.tasks_stop.write(|w| unsafe { w.bits(1) });
+    }
+}
+```
+
+### 4. How the TIMER Peripheral Works
+
+The nRF52833 TIMER peripheral is a hardware counter:
+- **Clock Source**: Runs at 1 MHz (configured via prescaler)
+- **Counter Register**: Increments every microsecond
+- **Compare Register (CC[0])**: Holds the target count value
+- **Event**: Fires when counter equals compare value
+
+For a 100ms delay:
+1. Set timer frequency to 1 MHz (1 tick = 1 microsecond)
+2. Load compare register with 100,000 (100ms × 1000 μs/ms)
+3. Clear the compare event flag
+4. Start the timer counting from 0
+5. Busy-wait until the compare event flag is set
+6. Stop the timer
+
+### 5. Why Hardware Timers Are Better
+
+Compared to software loops:
+- **Accurate**: Not affected by code optimization or interrupts
+- **Consistent**: Always takes exactly the specified time
+- **Efficient**: CPU can do other work (though this example busy-waits)
+- **Predictable**: Timing doesn't change with compiler settings
+
+The hardware timer counts independently while your code waits, ensuring precise timing regardless of what else happens in your program.
+
+## How `set_high()` Works Through the HAL
+
+When you call `row1.set_high()`, it goes through several layers:
+
+### 1. Your Code
+```rust
+row1.set_high().unwrap();
+```
+
+### 2. The OutputPin Trait (from embedded-hal)
+
+The `embedded_hal::digital::OutputPin` trait defines the interface:
+```rust
+pub trait OutputPin {
+    fn set_high(&mut self) -> Result<(), Self::Error>;
+    fn set_low(&mut self) -> Result<(), Self::Error>;
+}
+```
+
+This trait provides a generic interface that works across different microcontrollers. Your code doesn't need to know about nRF52833-specific details.
+
+### 3. The HAL Implementation (nrf52833-hal)
+
+The `nrf52833-hal` crate implements this trait for GPIO pins:
+```rust
+impl<MODE> OutputPin for Pin<Output<MODE>> {
+    fn set_high(&mut self) -> Result<(), Self::Error> {
+        // Safety: We own this pin, so we have exclusive access
+        unsafe { (*P0::ptr()).outset.write(|w| w.bits(1 << self.pin)) }
+        Ok(())
+    }
+}
+```
+
+This code:
+- Gets a pointer to the GPIO peripheral registers
+- Writes to the OUTSET register (sets specific bits high without affecting others)
+- Uses bit shifting to target the correct pin (e.g., pin 21 → bit 21)
+
+### 4. What OUTSET Does
+
+The OUTSET register is special:
+- Writing a `1` to a bit sets that GPIO pin HIGH
+- Writing a `0` has no effect (doesn't change the pin)
+- This allows setting individual pins without reading the current state first
+
+For pin 21 (row1):
+- Bit mask: `1 << 21` = `0x00200000`
+- Writing this to OUTSET sets pin 21 HIGH while leaving all other pins unchanged
 
 ## Assembly Code Generation
 
