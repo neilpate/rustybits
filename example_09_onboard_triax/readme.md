@@ -8,9 +8,6 @@ This program reads data from the LSM303AGR accelerometer/magnetometer sensor tha
 
 ## Running this example
 
-### Quick Start
-1. Connect your micro:bit via USB
-2. Open a terminal and run:
 ```bash
 cd example_09_onboard_triax
 cargo embed
@@ -23,13 +20,6 @@ Accelerometer: x -16 y 32 z 1008
 Accelerometer: x -48 y 0 z 992
 ...
 ```
-
-### From VS Code
-1. Open `src/main.rs` in VS Code
-2. Press `F5` to start debugging with RTT output
-
-> **💡 Need VS Code setup help?** See [vscode_setup.md](../vscode_setup.md)
-
 ## The Code
 
 ```rust
@@ -106,23 +96,8 @@ The acceleration values are in milligravities (mg):
 - **I²C addresses**: 0x19 for accelerometer, 0x1E for magnetometer
 - **High-level driver**: The `lsm303agr` crate handles all the register-level details
 
-### RTT (Real-Time Transfer)
-- **Debug channel**: Uses the SWD debug interface for fast, low-overhead communication
-- **No UART needed**: Doesn't use serial pins, works through the debugger
-- **Fast**: Much faster than serial UART communication
-
-> **🦀 New to embedded Rust?** Check out the **[Embedded Rust Primer](../embedded_rust_primer.md)** to understand `#![no_std]`, `#[entry]`, and other embedded essentials!
-
-## Next Steps
-
-- Try moving the micro:bit around and watch the acceleration values change
-- Modify the code to read magnetometer data as well
-- Change the output data rate or resolution mode
-- Want to understand the I²C protocol and trait flow? See [technical_details.md](technical_details.md)
-
 ## Additional Resources
 
-- **[Embedded Rust Primer](../embedded_rust_primer.md)** - Essential embedded Rust concepts  
-- **[VS Code Setup Guide](../vscode_setup.md)** - Complete development environment setup
-- **[LSM303AGR Datasheet](https://www.st.com/resource/en/datasheet/lsm303agr.pdf)** - Complete sensor documentation
+- **[LSM303AGR Datasheet](../doc/lsm303agr.pdf)** - Complete sensor documentation
 - **[I²C Protocol Specification](https://www.nxp.com/docs/en/user-guide/UM10204.pdf)** - I²C bus specification
+- **[Technical Details](technical_details.md)** - Deep dive from Rust code to electrical signals
