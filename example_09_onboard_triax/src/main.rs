@@ -18,9 +18,9 @@ fn main() -> ! {
     rtt_init_print!();
     let board = microbit::Board::take().unwrap();
 
-    let i2c = { twim::Twim::new(board.TWIM0, board.i2c_internal.into(), FREQUENCY_A::K100) };
     let mut timer0 = Timer::new(board.TIMER0);
 
+    let i2c = { twim::Twim::new(board.TWIM0, board.i2c_internal.into(), FREQUENCY_A::K100) };
     let mut sensor = Lsm303agr::new_with_i2c(i2c);
 
     let id = sensor.accelerometer_id().unwrap();
@@ -29,11 +29,10 @@ fn main() -> ! {
     sensor
         .set_accel_mode_and_odr(&mut timer0, AccelMode::HighResolution, AccelOutputDataRate::Hz50)
         .unwrap();
-    let mut sensor = sensor.into_mag_continuous().ok().unwrap();
 
     loop {
         let (x, y, z) = sensor.acceleration().unwrap().xyz_mg();
         rprintln!("Accelerometer: x {} y {} z {}", x, y, z);
-        timer0.delay_ms(1000);
+        timer0.delay_ms(250);
     }
 }
