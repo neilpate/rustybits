@@ -84,7 +84,16 @@ This project uses **independent examples** rather than a Cargo workspace - each 
 - Direct channel control with UpChannel and DownChannel
 - **Best for**: Building interactive debug interfaces and command interpreters
 
-> **Note**: Examples 07 and 08 require `cargo embed` instead of `cargo run` to access the interactive RTT terminal.
+### [Example 09: Onboard Accelerometer](example_09_onboard_triax/)
+**📡 I²C Sensor Communication** - "How do I read data from I²C sensors?"
+- I²C communication using TWIM (Two-Wire Interface Master) peripheral with DMA
+- LSM303AGR accelerometer sensor driver integration
+- Reading acceleration data in milligravities across three axes
+- High-level driver abstractions over low-level register access
+- Multiple abstraction layers from Rust code to hardware I²C signals
+- **Best for**: Learning I²C protocol implementation and sensor interfacing
+
+> **Note**: Examples 07, 08, and 09 require `cargo embed` instead of `cargo run` to access the interactive RTT terminal.
 
 > **Educational Philosophy**: Examples 03 and 04 represent progressively lower levels of embedded systems programming. While production code typically uses higher-level abstractions (Example 01 approach), understanding bare-metal implementation provides valuable insight into the underlying hardware behavior and system architecture.
 >
