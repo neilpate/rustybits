@@ -4,7 +4,7 @@
 
 A collection of embedded Rust programming examples for the BBC micro:bit v2. This project demonstrates various aspects of embedded development using the nRF52833 microcontroller and the micro:bit v2 development board.
 
-This project took inspiration and the initial Hello World example from [The Embedded Rust Book](https://docs.rust-embedded.org/book/) and has evolved to include progressively advanced embedded programming concepts and techniques. The Embedded Rust Book is an excellent reference and readers are encouraged to refer to it alongside these examples.
+This project took inspiration and the initial Hello World example from [The Embedded Rust Book](https://docs.rust-embedded.org/discovery/microbit/index.html) and has evolved to include progressively advanced embedded programming concepts and techniques. The Embedded Rust Book is an excellent reference and readers are encouraged to refer to it alongside these examples. Note there are two versions of the book (First is for the STM32 Discovery board, second and more recent is for the Micro:bit).
 
 > **Note on the name**: This repository shares its name with the excellent [The Rusty Bits YouTube channel](https://www.youtube.com/@therustybits/videos) by pure coincidence. They had the name first! The channel provides comprehensive embedded Rust programming tutorials and is definitely worth checking out, though it is unaffiliated with this project.
 
@@ -124,7 +124,11 @@ Each example builds the same functionality (blinking LED) but reveals progressiv
 - BBC micro:bit v2 (with nRF52833 microcontroller)
 
 ### Software Installation
-Follow the installation guide from [The Embedded Rust Book - Installation](https://docs.rust-embedded.org/book/intro/install.html) for complete setup instructions.
+Follow the installation guide from [The Embedded Rust Book - Installation](https://docs.rust-embedded.org/discovery/microbit/index.html) for complete setup instructions.
+1. Install rust and cargo-bintools
+2. Install cargo-embed
+3. Install ARM toolchain (https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads)
+
 
 ### VS Code Extensions
 Required extensions for the best development experience:
