@@ -129,6 +129,23 @@ Follow the installation guide from [The Embedded Rust Book - Installation](https
 2. Install cargo-embed
 3. Install ARM toolchain (https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads)
 
+#### Windows-Specific Setup
+If you're running on Windows, you'll need these additional components:
+
+1. **Install pixi package manager**
+   - Download and install from [pixi installation guide](https://pixi.prefix.dev/latest/installation/)
+   - Pixi provides a modern package management solution for development environments
+
+2. **Install Visual Studio 2022 Build Tools**
+   - Download from [Visual Studio Downloads](https://visualstudio.microsoft.com/downloads/)
+   - Select "Build Tools for Visual Studio 2022" 
+   - During installation, select the "C++ build tools" workload
+   - Required for compiling native dependencies and linking
+
+3. **Enable Windows Developer Mode**
+   - Open Windows Settings → Update & Security → For developers
+   - Select "Developer Mode"
+   - This enables symlink creation and other development features without admin privileges
 
 ### VS Code Extensions
 Required extensions for the best development experience:
