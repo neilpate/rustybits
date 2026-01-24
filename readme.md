@@ -133,7 +133,7 @@ Follow the installation guide from [The Embedded Rust Book - Installation](https
 If you're running on Windows, you'll need these additional components:
 
 1. **Install pixi package manager**
-   - Download and install from [prefix.dev/pixi](https://pixi.sh)
+   - Download and install from [pixi.sh](https://pixi.sh)
    - Pixi provides a modern package management solution for development environments
 
 2. **Install Visual Studio 2022 Build Tools**
